@@ -5,7 +5,10 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "seed:users": "node src/seeders/create-default-users.js",
+    "list:users": "node src/seeders/list-users.js",
+    "delete:users": "node src/seeders/delete-all-users.js"
   },
   "keywords": [
     "kantin",

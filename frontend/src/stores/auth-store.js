@@ -45,17 +45,21 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async logout() {
+      this.isLoading = true
       try {
+        // Kirim request logout ke server untuk blacklist token
         await AuthService.logout()
       } catch (error) {
         console.warn('Logout API failed:', error)
+        // Tetap lanjutkan logout meski API gagal
       } finally {
         // Clear all auth data
         this.user = null
         this.token = null
         this.isInitialized = false
+        this.isLoading = false
 
-        // Clear localStorage
+        // Pastikan token dihapus dari localStorage dan axios headers
         AuthService.removeToken()
       }
     },
@@ -78,16 +82,20 @@ export const useAuthStore = defineStore('auth', {
             fullName: payload.fullName || payload.name,
             email: payload.email
           }
-        } catch {
-          console.warn('Failed to decode token, clearing auth')
-          AuthService.removeToken()
-          this.token = null
-          this.user = null
+        } catch (error) {
+          console.warn('Failed to decode token, clearing auth:', error)
+          this.clearAuth()
         }
       } else {
-        AuthService.removeToken()
+        this.clearAuth()
       }
       this.isInitialized = true
+    },
+
+    clearAuth() {
+      this.user = null
+      this.token = null
+      AuthService.removeToken()
     },
 
     $reset() {
@@ -95,7 +103,7 @@ export const useAuthStore = defineStore('auth', {
       this.token = null
       this.isLoading = false
       this.isInitialized = false
-      AuthService.removeToken()
+      this.clearAuth()
     }
   }
 })

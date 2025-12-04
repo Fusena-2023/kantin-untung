@@ -1,7 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { User, Role } = require('../models');
-const { generateToken } = require('../middleware/auth');
+const { generateToken, authenticate } = require('../middleware/auth');
+const tokenManager = require('../utils/tokenManager');
 
 const router = express.Router();
 
@@ -163,12 +164,41 @@ router.post('/login', [
   }
 });
 
-// Logout
-router.post('/logout', (req, res) => {
+// Check token validity
+router.get('/check', authenticate, (req, res) => {
   res.json({
     success: true,
-    message: 'Logout berhasil'
+    message: 'Token valid',
+    data: {
+      user: req.user
+    }
   });
 });
+
+// Logout
+router.post('/logout', authenticate, (req, res) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '') || 
+                  req.cookies?.token;
+    
+    if (token) {
+      // Add token to blacklist using TokenManager
+      tokenManager.addToBlacklist(token);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Logout berhasil'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal melakukan logout'
+    });
+  }
+});
+
+module.exports = router;
 
 module.exports = router;

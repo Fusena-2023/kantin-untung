@@ -35,10 +35,16 @@ class AuthService {
 
   async logout() {
     try {
-      await api.post(`${this.baseURL}/logout`)
+      // Send logout request to server (ini akan menambahkan token ke blacklist)
+      const token = this.getToken()
+      if (token) {
+        await api.post(`${this.baseURL}/logout`)
+      }
     } catch (error) {
       console.warn('Logout request failed:', error)
+      // Tetap lanjutkan proses logout meski request gagal
     } finally {
+      // Selalu hapus token dari localStorage dan headers
       this.removeToken()
     }
   }

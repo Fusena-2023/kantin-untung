@@ -29,9 +29,14 @@ api.interceptors.response.use((response) => {
   return response
 }, (error) => {
   if (error.response?.status === 401) {
-    // Token expired or invalid, redirect to login
+    // Token expired, invalid, atau sudah di-logout
     localStorage.removeItem('auth_token')
-    window.location.href = '/#/login'
+    delete api.defaults.headers.common['Authorization']
+
+    // Hanya redirect jika tidak sedang di login page
+    if (window.location.hash !== '#/login' && !window.location.hash.includes('/login')) {
+      window.location.href = '/#/login'
+    }
   }
   return Promise.reject(error)
 })

@@ -12,7 +12,7 @@
           color="primary"
           icon="add"
           label="Tambah User"
-          @click="showCreateDialog = true"
+          @click="openCreateDialog"
         />
       </div>
     </div>
@@ -60,9 +60,9 @@
           <template v-slot:body-cell-role="props">
             <q-td :props="props">
               <q-chip
-                :color="props.value === 'pemilik' ? 'orange' : 'blue'"
+                :color="props.row.userRole?.name === 'pemilik' ? 'orange' : 'blue'"
                 text-color="white"
-                :label="props.value === 'pemilik' ? 'Pemilik' : 'Pegawai'"
+                :label="props.row.userRole?.displayName || 'Tidak ada role'"
               />
             </q-td>
           </template>
@@ -79,7 +79,10 @@
 
           <template v-slot:body-cell-created_at="props">
             <q-td :props="props">
-              {{ formatDate(props.value) }}
+              <span v-if="props.row.created_at || props.row.createdAt">
+                {{ formatDate(props.row.created_at || props.row.createdAt) }}
+              </span>
+              <span v-else class="text-grey">-</span>
             </q-td>
           </template>
 
@@ -91,13 +94,19 @@
                 color="warning"
                 icon="edit"
                 @click="editUser(props.row)"
+                size="sm"
+                title="Edit user"
               />
               <q-btn
                 flat
                 round
                 color="negative"
                 icon="delete"
-                @click="deleteUser(props.row)"
+                @click.stop.prevent="deleteUser(props.row)"
+                :disable="isSubmitting"
+                title="Hapus user"
+                size="sm"
+                class="q-ml-xs"
               />
             </q-td>
           </template>
@@ -113,13 +122,14 @@
         </q-card-section>
 
         <q-card-section>
-          <q-form @submit="onSubmit" ref="userForm">
+          <q-form @submit.prevent="onSubmit" ref="userFormRef" class="q-gutter-md">
             <q-input
               v-model="userForm.username"
               label="Username *"
               outlined
-              class="q-mb-md"
-              :rules="[val => !!val || 'Username diperlukan']"
+              dense
+              :rules="[val => !!val && val.length >= 3 || 'Username minimal 3 karakter']"
+              hint="Minimal 3 karakter, hanya huruf, angka, dan underscore"
             />
 
             <q-input
@@ -127,16 +137,19 @@
               label="Email *"
               type="email"
               outlined
-              class="q-mb-md"
-              :rules="[val => !!val || 'Email diperlukan']"
+              dense
+              :rules="[
+                val => !!val || 'Email diperlukan',
+                val => /.+@.+\..+/.test(val) || 'Format email tidak valid'
+              ]"
             />
 
             <q-input
               v-model="userForm.fullName"
               label="Nama Lengkap *"
               outlined
-              class="q-mb-md"
-              :rules="[val => !!val || 'Nama lengkap diperlukan']"
+              dense
+              :rules="[val => !!val && val.length >= 2 || 'Nama lengkap minimal 2 karakter']"
             />
 
             <q-input
@@ -144,36 +157,43 @@
               :label="editingUser ? 'Password (kosongkan jika tidak diubah)' : 'Password *'"
               type="password"
               outlined
-              class="q-mb-md"
-              :rules="!editingUser ? [val => !!val || 'Password diperlukan'] : []"
+              dense
+              :rules="!editingUser ? [val => !!val && val.length >= 6 || 'Password minimal 6 karakter'] : [
+                val => !val || val.length >= 6 || 'Password minimal 6 karakter jika diisi'
+              ]"
+              :hint="editingUser ? 'Kosongkan jika tidak ingin mengubah password' : 'Minimal 6 karakter'"
             />
 
             <q-select
               v-model="userForm.role"
               label="Role *"
               outlined
+              dense
               :options="roleOptions"
               emit-value
               map-options
-              class="q-mb-md"
-              :rules="[val => !!val || 'Role diperlukan']"
+              :rules="[val => val !== '' && val !== null && val !== undefined || 'Role diperlukan']"
             />
 
             <q-checkbox
               v-model="userForm.isActive"
-              label="Aktif"
+              label="Status Aktif"
               v-if="editingUser"
+              color="primary"
+              @update:model-value="onActiveStatusChange"
             />
           </q-form>
         </q-card-section>
 
-        <q-card-actions align="right">
-          <q-btn flat label="Batal" color="grey" @click="closeDialog" />
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Batal" color="grey" @click="forceCloseDialog" />
+          <q-btn flat label="Tutup Paksa" color="orange" @click="emergencyClose" v-if="isSubmitting" />
           <q-btn
             label="Simpan"
             color="primary"
-            @click="$refs.userForm.submit()"
+            @click="handleSimpanClick"
             :loading="isSubmitting"
+            :disable="isSubmitting"
           />
         </q-card-actions>
       </q-card>
@@ -182,18 +202,34 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
-import { useQuasar } from 'quasar'
+import { ref, onMounted, reactive, watch } from 'vue'
+import { useQuasar, Notify } from 'quasar'
 import UserService from 'src/services/user'
 import { formatDate } from 'src/utils/format'
 
 const $q = useQuasar()
+
+// Helper function for safe notifications
+const showNotification = (options) => {
+  try {
+    if ($q && typeof $q.notify === 'function') {
+      $q.notify(options)
+    } else {
+      Notify.create(options)
+    }
+  } catch (error) {
+    console.error('Notification error:', error)
+    // Fallback to basic alert if all else fails
+    alert(`${options.color === 'positive' ? 'Success' : 'Error'}: ${options.message}`)
+  }
+}
 
 const users = ref([])
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 const showCreateDialog = ref(false)
 const editingUser = ref(null)
+const userFormRef = ref(null)
 
 const filters = reactive({
   search: '',
@@ -205,7 +241,7 @@ const userForm = reactive({
   email: '',
   fullName: '',
   password: '',
-  role: '',
+  role: 2, // Default ke pegawai
   isActive: true
 })
 
@@ -216,8 +252,8 @@ const pagination = ref({
 })
 
 const roleOptions = [
-  { label: 'Pegawai', value: 'pegawai' },
-  { label: 'Pemilik', value: 'pemilik' }
+  { label: 'Pegawai', value: 2 },
+  { label: 'Pemilik', value: 1 }
 ]
 
 const columns = [
@@ -232,7 +268,7 @@ const columns = [
     name: 'fullName',
     label: 'Nama Lengkap',
     align: 'left',
-    field: 'full_name',
+    field: 'fullName',
     sortable: true
   },
   {
@@ -246,21 +282,21 @@ const columns = [
     name: 'role',
     label: 'Role',
     align: 'center',
-    field: 'role',
+    field: row => row.userRole?.displayName || 'Tidak ada role',
     sortable: true
   },
   {
     name: 'isActive',
     label: 'Status',
     align: 'center',
-    field: 'is_active',
+    field: 'isActive',
     sortable: true
   },
   {
     name: 'created_at',
     label: 'Dibuat',
     align: 'left',
-    field: 'created_at',
+    field: row => row.created_at || row.createdAt,
     sortable: true
   },
   {
@@ -281,11 +317,11 @@ const fetchUsers = async () => {
       role: filters.role
     }
 
-    const data = await UserService.getUsers(params)
-    users.value = data.users
-    pagination.value.rowsNumber = data.pagination.total
+    const response = await UserService.getUsers(params)
+    users.value = response.data.users
+    pagination.value.rowsNumber = response.data.pagination?.total || response.data.users.length
   } catch (error) {
-    $q.notify({
+    showNotification({
       color: 'negative',
       message: error,
       icon: 'warning'
@@ -301,102 +337,339 @@ const onRequest = (props) => {
   fetchUsers()
 }
 
-const editUser = (user) => {
-  editingUser.value = user
-  userForm.username = user.username
-  userForm.email = user.email
-  userForm.fullName = user.full_name
-  userForm.password = ''
-  userForm.role = user.role
-  userForm.isActive = user.is_active
-  showCreateDialog.value = true
+const onActiveStatusChange = (newValue) => {
+  console.log('Checkbox status aktif changed:', newValue)
+  console.log('Current form state:', userForm)
 }
 
-const deleteUser = async (user) => {
-  $q.dialog({
-    title: 'Konfirmasi',
-    message: `Apakah Anda yakin ingin menghapus user "${user.full_name}"?`,
-    cancel: true,
-    persistent: true
-  }).onOk(async () => {
-    try {
-      await UserService.deleteUser(user.id)
-      $q.notify({
-        color: 'positive',
-        message: 'User berhasil dihapus',
-        icon: 'check'
-      })
-      fetchUsers()
-    } catch (error) {
-      $q.notify({
-        color: 'negative',
-        message: error,
-        icon: 'warning'
-      })
-    }
-  })
-}
-
-const onSubmit = async () => {
-  try {
-    isSubmitting.value = true
-
-    const userData = {
-      username: userForm.username,
-      email: userForm.email,
-      fullName: userForm.fullName,
-      role: userForm.role
-    }
-
-    if (userForm.password) {
-      userData.password = userForm.password
-    }
-
-    if (editingUser.value) {
-      userData.isActive = userForm.isActive
-      await UserService.updateUser(editingUser.value.id, userData)
-      $q.notify({
-        color: 'positive',
-        message: 'User berhasil diupdate',
-        icon: 'check'
-      })
-    } else {
-      userData.password = userForm.password
-      await UserService.createUser(userData)
-      $q.notify({
-        color: 'positive',
-        message: 'User berhasil dibuat',
-        icon: 'check'
-      })
-    }
-
-    closeDialog()
-    fetchUsers()
-  } catch (error) {
-    $q.notify({
-      color: 'negative',
-      message: error,
-      icon: 'warning'
-    })
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-const closeDialog = () => {
-  showCreateDialog.value = false
+const openCreateDialog = () => {
+  console.log('Opening create dialog...')
   editingUser.value = null
+
+  // Reset form untuk user baru
   Object.assign(userForm, {
     username: '',
     email: '',
     fullName: '',
     password: '',
-    role: '',
+    role: 2, // Default ke pegawai
     isActive: true
   })
+
+  showCreateDialog.value = true
+  console.log('Create dialog opened')
+}
+
+const editUser = (user) => {
+  console.log('Edit user data:', user) // Debug log
+  editingUser.value = user
+  userForm.username = user.username
+  userForm.email = user.email
+  userForm.fullName = user.fullName
+  userForm.password = ''
+  userForm.role = user.role || user.userRole?.id || 2
+  userForm.isActive = user.isActive !== undefined ? user.isActive : true
+  showCreateDialog.value = true
+  console.log('Edit form populated:', userForm)
+}
+
+const deleteUser = async (user) => {
+  console.log('=== DELETE USER FUNCTION CALLED ===')
+  console.log('Delete user clicked:', user)
+  console.log('User ID:', user?.id)
+  console.log('User fullName:', user?.fullName)
+  console.log('Type of user:', typeof user)
+  console.log('User object keys:', user ? Object.keys(user) : 'no user')
+
+  if (!user) {
+    console.error('User is null or undefined:', user)
+    showNotification({
+      color: 'negative',
+      message: 'Data user tidak valid - user kosong',
+      icon: 'warning',
+      position: 'top'
+    })
+    return
+  }
+
+  if (!user.id) {
+    console.error('User ID is missing:', user)
+    showNotification({
+      color: 'negative',
+      message: 'Data user tidak valid - ID kosong',
+      icon: 'warning',
+      position: 'top'
+    })
+    return
+  }
+
+  const userName = user.fullName || user.username || 'User tidak dikenal'
+  console.log('Using user name for dialog:', userName)
+
+  console.log('Creating delete dialog...')
+  $q.dialog({
+    title: 'Konfirmasi Hapus User',
+    message: `Apakah Anda yakin ingin menghapus user "${userName}"?`,
+    persistent: true,
+    ok: {
+      label: 'Hapus',
+      color: 'negative'
+    },
+    cancel: {
+      label: 'Batal',
+      color: 'grey'
+    }
+  }).onOk(async () => {
+    console.log('Delete confirmed for user:', user.id)
+    try {
+      console.log('Calling UserService.deleteUser...')
+      await UserService.deleteUser(user.id)
+      console.log('User deleted successfully')
+
+      showNotification({
+        color: 'positive',
+        message: 'User berhasil dihapus',
+        icon: 'check',
+        position: 'top'
+      })
+
+      console.log('Refreshing users list...')
+      await fetchUsers()
+      console.log('Users list refreshed')
+    } catch (error) {
+      console.error('Delete user error:', error)
+      showNotification({
+        color: 'negative',
+        message: typeof error === 'string' ? error : (error.message || 'Gagal menghapus user'),
+        icon: 'warning',
+        position: 'top'
+      })
+    }
+  }).onCancel(() => {
+    console.log('Delete cancelled')
+  })
+}
+
+const handleSimpanClick = () => {
+  console.log('=== TOMBOL SIMPAN DIKLIK ===')
+  console.log('Current form data:', userForm)
+  console.log('Is editing:', !!editingUser.value)
+  console.log('Is submitting:', isSubmitting.value)
+
+  if (isSubmitting.value) {
+    console.log('Already submitting, ignoring click')
+    return
+  }
+
+  validateAndSubmit()
+}
+
+const validateAndSubmit = () => {
+  console.log('Validating form...', userForm)
+
+  // Simple validation before submit
+  if (!userForm.username || !userForm.email || !userForm.fullName) {
+    showNotification({
+      color: 'negative',
+      message: 'Mohon lengkapi semua field yang diperlukan',
+      icon: 'warning',
+      position: 'top'
+    })
+    return
+  }
+
+  if (!editingUser.value && !userForm.password) {
+    showNotification({
+      color: 'negative',
+      message: 'Password diperlukan untuk user baru',
+      icon: 'warning',
+      position: 'top'
+    })
+    return
+  }
+
+  if (!userForm.role) {
+    showNotification({
+      color: 'negative',
+      message: 'Role harus dipilih',
+      icon: 'warning',
+      position: 'top'
+    })
+    return
+  }
+
+  console.log('Form validation passed, submitting...')
+  onSubmit()
+}
+
+const onSubmit = async () => {
+  if (isSubmitting.value) {
+    console.log('Already submitting, skipping...')
+    return
+  }
+
+  try {
+    isSubmitting.value = true
+    console.log('Starting submit...', {
+      editingUser: editingUser.value,
+      isEdit: !!editingUser.value,
+      formData: userForm
+    })
+
+    const userData = {
+      username: userForm.username.trim(),
+      email: userForm.email.trim(),
+      fullName: userForm.fullName.trim(),
+      role: parseInt(userForm.role)
+    }
+
+    if (userForm.password && userForm.password.trim()) {
+      userData.password = userForm.password.trim()
+    }
+
+    let result
+    if (editingUser.value) {
+      userData.isActive = userForm.isActive
+      console.log('Updating user...', userData)
+      result = await UserService.updateUser(editingUser.value.id, userData)
+      console.log('Update result:', result)
+
+      showNotification({
+        color: 'positive',
+        message: 'User berhasil diupdate',
+        icon: 'check',
+        position: 'top'
+      })
+    } else {
+      if (!userData.password) {
+        throw new Error('Password diperlukan untuk user baru')
+      }
+      console.log('Creating user...', userData)
+      result = await UserService.createUser(userData)
+      console.log('Create result:', result)
+
+      showNotification({
+        color: 'positive',
+        message: 'User berhasil dibuat',
+        icon: 'check',
+        position: 'top'
+      })
+    }
+
+    // Force close dialog and refresh
+    console.log('Closing dialog and refreshing...')
+
+    // Close dialog first
+    forceCloseDialog()
+
+    // Then refresh data
+    setTimeout(async () => {
+      try {
+        await fetchUsers()
+        console.log('Users refreshed successfully')
+      } catch (refreshError) {
+        console.error('Error refreshing users:', refreshError)
+      }
+    }, 100)
+
+  } catch (error) {
+    console.error('Submit error:', error)
+    showNotification({
+      color: 'negative',
+      message: typeof error === 'string' ? error : (error.message || 'Terjadi kesalahan saat menyimpan user'),
+      icon: 'warning',
+      position: 'top'
+    })
+  } finally {
+    isSubmitting.value = false
+    console.log('Submit finished')
+  }
+}
+
+const emergencyClose = () => {
+  console.log('EMERGENCY CLOSE ACTIVATED!')
+  showCreateDialog.value = false
+  editingUser.value = null
+  isSubmitting.value = false
+
+  // Reset everything
+  Object.assign(userForm, {
+    username: '',
+    email: '',
+    fullName: '',
+    password: '',
+    role: 2,
+    isActive: true
+  })
+
+  // Force page refresh if needed
+  setTimeout(() => {
+    if (showCreateDialog.value) {
+      console.log('Emergency close failed, reloading page...')
+      location.reload()
+    }
+  }, 500)
+}
+
+const forceCloseDialog = () => {
+  try {
+    console.log('Force closing dialog...')
+    console.log('Current dialog state:', showCreateDialog.value)
+    console.log('Current editing user:', editingUser.value)
+    console.log('Current submitting state:', isSubmitting.value)
+
+    // Force close dialog immediately
+    showCreateDialog.value = false
+    editingUser.value = null
+    isSubmitting.value = false
+
+    // Immediate reset without timeout
+    Object.assign(userForm, {
+      username: '',
+      email: '',
+      fullName: '',
+      password: '',
+      role: 2,
+      isActive: true
+    })
+
+    console.log('Dialog force closed successfully')
+    console.log('New dialog state:', showCreateDialog.value)
+
+    // Force Vue reactivity update
+    setTimeout(() => {
+      console.log('Dialog state after timeout:', showCreateDialog.value)
+      if (showCreateDialog.value) {
+        console.log('WARNING: Dialog still open after force close!')
+        showCreateDialog.value = false
+      }
+    }, 10)
+  } catch (error) {
+    console.error('Error closing dialog:', error)
+  }
 }
 
 onMounted(() => {
   fetchUsers()
+})
+
+// Watch dialog state changes
+watch(showCreateDialog, (newVal, oldVal) => {
+  console.log('Dialog state changed:', { from: oldVal, to: newVal })
+  if (!newVal) {
+    console.log('Dialog closed')
+  } else {
+    console.log('Dialog opened')
+  }
+})
+
+// Watch editing user changes
+watch(editingUser, (newVal, oldVal) => {
+  console.log('Editing user changed:', { from: oldVal, to: newVal })
+})
+
+// Watch isSubmitting changes
+watch(isSubmitting, (newVal, oldVal) => {
+  console.log('isSubmitting changed:', { from: oldVal, to: newVal })
 })
 </script>

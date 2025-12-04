@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User, Role } = require('../models');
+const tokenManager = require('../utils/tokenManager');
 
 const authenticate = async (req, res, next) => {
   try {
@@ -10,6 +11,14 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: 'Token tidak ditemukan, akses ditolak'
+      });
+    }
+
+    // Check if token is blacklisted
+    if (tokenManager.isBlacklisted(token)) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token telah di-logout, akses ditolak'
       });
     }
 
