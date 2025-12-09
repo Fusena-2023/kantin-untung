@@ -1,28 +1,30 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="row q-mb-lg items-center">
-      <div class="col">
-        <h4 class="text-h4 q-ma-none">Transaksi</h4>
-        <p class="text-subtitle1 text-grey-7">
-          Kelola transaksi pemasukan dan pengeluaran
-        </p>
+  <q-page class="q-pa-sm q-pa-md-md">
+    <q-pull-to-refresh @refresh="onRefresh">
+      <div class="row q-mb-md items-center justify-between">
+        <div class="col">
+          <h4 class="text-h5 text-h4-md q-ma-none">Transaksi</h4>
+          <p class="text-caption text-subtitle1-md text-grey-7 q-mb-none">
+            Kelola transaksi pemasukan dan pengeluaran
+          </p>
+        </div>
+        <div class="col-auto gt-xs">
+          <q-btn
+            color="primary"
+            icon="refresh"
+            label="Refresh"
+            @click="fetchTransactions"
+            :loading="transactionStore.isLoading"
+            no-caps
+          />
+        </div>
       </div>
-      <div class="col-auto">
-        <q-btn
-          color="primary"
-          icon="add"
-          label="Tambah Transaksi"
-          to="/app/transactions/create"
-          v-if="authStore.isAuthenticated"
-        />
-      </div>
-    </div>
 
     <!-- Filters -->
-    <q-card class="q-mb-lg">
-      <q-card-section>
-        <div class="text-h6 q-mb-md">Filter</div>
-        <div class="row q-gutter-md">
+    <q-card class="q-mb-md">
+      <q-card-section class="q-pa-sm q-pa-md-md">
+        <div class="text-subtitle1 text-h6-md q-mb-sm q-mb-md-md text-weight-medium">Filter</div>
+        <div class="row q-col-gutter-sm q-col-gutter-md-md">
           <q-input
             v-model="filters.search"
             label="Cari transaksi..."
@@ -91,28 +93,39 @@
             </template>
           </q-input>
 
-          <div class="col-12 col-md-auto q-gutter-sm">
-            <q-btn
-              color="primary"
-              icon="search"
-              label="Filter"
-              @click="applyFilters"
-            />
-            <q-btn
-              color="grey"
-              icon="refresh"
-              label="Reset"
-              outline
-              @click="resetFilters"
-            />
+          <div class="col-12 col-md-auto">
+            <div class="row q-col-gutter-sm">
+              <div class="col-6 col-sm-auto">
+                <q-btn
+                  color="primary"
+                  icon="search"
+                  label="Filter"
+                  @click="applyFilters"
+                  class="full-width"
+                  no-caps
+                />
+              </div>
+              <div class="col-6 col-sm-auto">
+                <q-btn
+                  color="grey"
+                  icon="refresh"
+                  label="Reset"
+                  outline
+                  @click="resetFilters"
+                  class="full-width"
+                  no-caps
+                />
+              </div>
+            </div>
           </div>
         </div>
       </q-card-section>
     </q-card>
 
-    <!-- Transactions Table -->
+    <!-- Transactions List -->
     <q-card>
-      <q-card-section>
+      <q-card-section class="q-pa-sm q-pa-md-md">
+        <!-- Desktop Table View -->
         <q-table
           :rows="transactions"
           :columns="columns"
@@ -121,6 +134,7 @@
           :pagination="pagination"
           @request="onRequest"
           binary-state-sort
+          class="gt-xs"
         >
           <template v-slot:body-cell-type="props">
             <q-td :props="props">
@@ -128,6 +142,7 @@
                 :color="props.value === 'masuk' ? 'positive' : 'negative'"
                 text-color="white"
                 :label="props.value === 'masuk' ? 'Pemasukan' : 'Pengeluaran'"
+                size="sm"
               />
             </q-td>
           </template>
@@ -151,31 +166,177 @@
               <q-btn
                 flat
                 round
+                dense
                 color="info"
                 icon="visibility"
                 @click="viewTransaction(props.row)"
-              />
+                size="sm"
+              >
+                <q-tooltip>Lihat</q-tooltip>
+              </q-btn>
               <q-btn
                 flat
                 round
+                dense
                 color="warning"
                 icon="edit"
                 @click="editTransaction(props.row)"
                 v-if="canEdit(props.row)"
-              />
+                size="sm"
+              >
+                <q-tooltip>Edit</q-tooltip>
+              </q-btn>
               <q-btn
                 flat
                 round
+                dense
                 color="negative"
                 icon="delete"
                 @click="deleteTransaction(props.row)"
                 v-if="authStore.isPemilik"
-              />
+                size="sm"
+              >
+                <q-tooltip>Hapus</q-tooltip>
+              </q-btn>
             </q-td>
           </template>
         </q-table>
+
+        <!-- Mobile Card View -->
+        <div class="lt-sm">
+          <div v-if="transactionStore.isLoading" class="text-center q-py-lg">
+            <q-spinner color="primary" size="3em" />
+            <div class="text-grey q-mt-sm">Memuat transaksi...</div>
+          </div>
+
+          <div v-else-if="transactions.length === 0" class="text-center text-grey-5 q-py-lg">
+            <q-icon name="inbox" size="3em" color="grey-5" />
+            <div class="q-mt-sm">Tidak ada transaksi</div>
+          </div>
+
+          <div v-else class="q-gutter-sm">
+            <q-card
+              v-for="transaction in transactions"
+              :key="transaction.id"
+              bordered
+              flat
+            >
+              <q-card-section class="q-pa-sm">
+                <div class="row items-center q-mb-xs">
+                  <div class="col">
+                    <q-chip
+                      :color="transaction.type === 'masuk' ? 'positive' : 'negative'"
+                      text-color="white"
+                      size="sm"
+                      dense
+                    >
+                      {{ transaction.type === 'masuk' ? 'Pemasukan' : 'Pengeluaran' }}
+                    </q-chip>
+                  </div>
+                  <div class="col-auto">
+                    <span
+                      class="text-weight-bold"
+                      :class="transaction.type === 'masuk' ? 'text-positive' : 'text-negative'"
+                    >
+                      {{ transaction.type === 'masuk' ? '+' : '-' }}{{ formatCurrency(transaction.amount) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="text-body2 text-weight-medium q-mb-xs">
+                  {{ transaction.description }}
+                </div>
+
+                <div class="row q-col-gutter-xs text-caption text-grey-7 q-mb-sm">
+                  <div class="col-auto">
+                    <q-icon name="category" size="xs" class="q-mr-xs" />
+                    {{ transaction.category }}
+                  </div>
+                  <div class="col-auto">
+                    <q-icon name="event" size="xs" class="q-mr-xs" />
+                    {{ formatDate(transaction.transactionDate) }}
+                  </div>
+                  <div v-if="transaction.user && authStore.isPemilik" class="col-auto">
+                    <q-icon name="person" size="xs" class="q-mr-xs" />
+                    {{ transaction.user.fullName }}
+                  </div>
+                </div>
+
+                <div class="row q-gutter-xs">
+                  <q-btn
+                    flat
+                    dense
+                    color="info"
+                    icon="visibility"
+                    label="Lihat"
+                    @click="viewTransaction(transaction)"
+                    size="sm"
+                    no-caps
+                  />
+                  <q-btn
+                    v-if="canEdit(transaction)"
+                    flat
+                    dense
+                    color="warning"
+                    icon="edit"
+                    label="Edit"
+                    @click="editTransaction(transaction)"
+                    size="sm"
+                    no-caps
+                  />
+                  <q-btn
+                    v-if="authStore.isPemilik"
+                    flat
+                    dense
+                    color="negative"
+                    icon="delete"
+                    label="Hapus"
+                    @click="deleteTransaction(transaction)"
+                    size="sm"
+                    no-caps
+                  />
+                </div>
+              </q-card-section>
+            </q-card>
+
+            <!-- Mobile Pagination -->
+            <div class="row justify-center q-mt-md">
+              <q-pagination
+                v-model="pagination.page"
+                :max="Math.ceil(pagination.rowsNumber / pagination.rowsPerPage)"
+                :max-pages="5"
+                direction-links
+                boundary-links
+                @update:model-value="onPageChange"
+                color="primary"
+                size="sm"
+              />
+            </div>
+          </div>
+        </div>
       </q-card-section>
     </q-card>
+
+    <!-- Floating Action Button -->
+    <q-page-sticky position="bottom-right" :offset="[18, 18]">
+      <q-btn
+        fab
+        icon="add"
+        color="primary"
+        to="/app/transactions/create"
+        class="fab-button"
+        size="lg"
+      >
+        <q-tooltip
+          anchor="center left"
+          self="center right"
+          :offset="[10, 0]"
+          class="bg-primary text-subtitle2"
+        >
+          Tambah Transaksi Baru
+        </q-tooltip>
+      </q-btn>
+    </q-page-sticky>
 
     <!-- View Transaction Dialog -->
     <q-dialog v-model="showViewDialog">
@@ -234,6 +395,8 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    </q-pull-to-refresh>
   </q-page>
 </template>
 
@@ -420,6 +583,11 @@ const canEdit = (transaction) => {
   return false
 }
 
+const onRefresh = async (done) => {
+  await fetchTransactions()
+  done()
+}
+
 const applyFilters = () => {
   // Clean filters before setting
   const cleanedFilters = {}
@@ -462,6 +630,11 @@ const onRequest = (props) => {
   fetchTransactions()
 }
 
+const onPageChange = (page) => {
+  transactionStore.setPage(page)
+  fetchTransactions()
+}
+
 const viewTransaction = (transaction) => {
   selectedTransaction.value = transaction
   showViewDialog.value = true
@@ -497,3 +670,20 @@ onMounted(() => {
   fetchTransactions()
 })
 </script>
+
+<style scoped>
+/* Floating Action Button */
+.fab-button {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab-button:hover {
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.fab-button:active {
+  transform: scale(0.95);
+}
+</style>

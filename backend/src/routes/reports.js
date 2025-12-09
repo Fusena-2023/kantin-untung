@@ -79,6 +79,60 @@ router.get('/dashboard', authorize(1), async (req, res) => {
       }]
     });
 
+    // Last 7 days data for chart
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+
+      const dayTransactions = await Transaction.findAll({
+        where: {
+          transactionDate: {
+            [Op.between]: [dayStart, dayEnd]
+          }
+        }
+      });
+
+      const dayIncome = dayTransactions
+        .filter(t => t.type === 'masuk')
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      
+      const dayExpense = dayTransactions
+        .filter(t => t.type === 'keluar')
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+      last7Days.push({
+        date: dayStart.toISOString().split('T')[0],
+        income: dayIncome,
+        expense: dayExpense,
+        profit: dayIncome - dayExpense,
+        count: dayTransactions.length
+      });
+    }
+
+    // Category breakdown for this month
+    const categoryBreakdown = monthTransactions.reduce((acc, transaction) => {
+      if (!acc[transaction.category]) {
+        acc[transaction.category] = {
+          category: transaction.category,
+          income: 0,
+          expense: 0,
+          count: 0
+        };
+      }
+      
+      if (transaction.type === 'masuk') {
+        acc[transaction.category].income += parseFloat(transaction.amount);
+      } else {
+        acc[transaction.category].expense += parseFloat(transaction.amount);
+      }
+      acc[transaction.category].count += 1;
+      
+      return acc;
+    }, {});
+
     res.json({
       success: true,
       message: 'Dashboard data berhasil diambil',
@@ -99,7 +153,11 @@ router.get('/dashboard', authorize(1), async (req, res) => {
           total: totalUsers,
           active: totalActiveUsers
         },
-        recentTransactions
+        recentTransactions,
+        dailyData: last7Days,
+        byCategory: Object.values(categoryBreakdown).sort((a, b) => 
+          (b.income + b.expense) - (a.income + a.expense)
+        ).slice(0, 5)
       }
     });
   } catch (error) {

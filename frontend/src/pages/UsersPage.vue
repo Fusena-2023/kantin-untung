@@ -1,31 +1,34 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="row q-mb-lg items-center">
-      <div class="col">
-        <h4 class="text-h4 q-ma-none">Manajemen User</h4>
-        <p class="text-subtitle1 text-grey-7">
-          Kelola akun pegawai dan pemilik kantin
-        </p>
+  <q-page class="q-pa-sm q-pa-md-md">
+    <q-pull-to-refresh @refresh="onRefresh">
+      <div class="row q-mb-md items-center justify-between">
+        <div class="col">
+          <h4 class="text-h5 text-h4-md q-ma-none">Manajemen User</h4>
+          <p class="text-caption text-body2-md text-grey-6 q-mb-none">
+            Kelola akun pegawai dan pemilik kantin
+          </p>
+        </div>
+        <div class="col-auto gt-xs">
+          <q-btn
+            color="primary"
+            icon="add"
+            label="Tambah User"
+            @click="openCreateDialog"
+            no-caps
+          />
+        </div>
       </div>
-      <div class="col-auto">
-        <q-btn
-          color="primary"
-          icon="add"
-          label="Tambah User"
-          @click="openCreateDialog"
-        />
-      </div>
-    </div>
 
     <!-- Users Table -->
-    <q-card>
-      <q-card-section>
-        <div class="row q-mb-md">
+    <q-card class="modern-card">
+      <q-card-section class="q-pa-sm q-pa-md-md">
+        <div class="row q-col-gutter-sm q-col-gutter-md-md q-mb-md">
           <q-input
             v-model="filters.search"
             label="Cari user..."
             outlined
-            class="col-12 col-md-4"
+            dense
+            class="col-12 col-md-8"
             @keyup.enter="fetchUsers"
           >
             <template v-slot:append>
@@ -33,21 +36,21 @@
             </template>
           </q-input>
 
-          <q-space />
-
           <q-select
             v-model="filters.role"
             label="Filter Role"
             outlined
+            dense
             :options="roleOptions"
             emit-value
             map-options
             clearable
-            class="col-12 col-md-2"
+            class="col-12 col-md-4"
             @update:model-value="fetchUsers"
           />
         </div>
 
+        <!-- Desktop Table View -->
         <q-table
           :rows="users"
           :columns="columns"
@@ -56,6 +59,7 @@
           :pagination="pagination"
           @request="onRequest"
           binary-state-sort
+          class="gt-xs"
         >
           <template v-slot:body-cell-role="props">
             <q-td :props="props">
@@ -63,6 +67,7 @@
                 :color="props.row.userRole?.name === 'pemilik' ? 'orange' : 'blue'"
                 text-color="white"
                 :label="props.row.userRole?.displayName || 'Tidak ada role'"
+                size="sm"
               />
             </q-td>
           </template>
@@ -73,6 +78,7 @@
                 :color="props.value ? 'positive' : 'negative'"
                 text-color="white"
                 :label="props.value ? 'Aktif' : 'Nonaktif'"
+                size="sm"
               />
             </q-td>
           </template>
@@ -91,28 +97,153 @@
               <q-btn
                 flat
                 round
+                dense
                 color="warning"
                 icon="edit"
                 @click="editUser(props.row)"
                 size="sm"
-                title="Edit user"
-              />
+              >
+                <q-tooltip>Edit</q-tooltip>
+              </q-btn>
               <q-btn
                 flat
                 round
+                dense
                 color="negative"
                 icon="delete"
                 @click.stop.prevent="deleteUser(props.row)"
                 :disable="isSubmitting"
-                title="Hapus user"
                 size="sm"
                 class="q-ml-xs"
-              />
+              >
+                <q-tooltip>Hapus</q-tooltip>
+              </q-btn>
             </q-td>
           </template>
         </q-table>
+
+        <!-- Mobile Card View -->
+        <div class="lt-sm">
+          <div v-if="isLoading" class="text-center q-py-lg">
+            <q-spinner color="primary" size="3em" />
+            <div class="text-grey q-mt-sm">Memuat data...</div>
+          </div>
+
+          <div v-else-if="users.length === 0" class="text-center text-grey-5 q-py-lg">
+            <q-icon name="people_outline" size="3em" color="grey-5" />
+            <div class="q-mt-sm">Tidak ada user</div>
+          </div>
+
+          <div v-else class="q-gutter-sm">
+            <q-card
+              v-for="user in users"
+              :key="user.id"
+              bordered
+              flat
+            >
+              <q-card-section class="q-pa-sm">
+                <div class="row items-center q-mb-xs">
+                  <div class="col">
+                    <div class="text-subtitle2 text-weight-medium">{{ user.fullName }}</div>
+                    <div class="text-caption text-grey-7">@{{ user.username }}</div>
+                  </div>
+                  <div class="col-auto">
+                    <q-chip
+                      :color="user.userRole?.name === 'pemilik' ? 'orange' : 'blue'"
+                      text-color="white"
+                      :label="user.userRole?.displayName || 'Tidak ada role'"
+                      size="sm"
+                      dense
+                    />
+                  </div>
+                </div>
+
+                <div class="row q-col-gutter-xs text-caption text-grey-7 q-mb-sm">
+                  <div class="col-12">
+                    <q-icon name="email" size="xs" class="q-mr-xs" />
+                    {{ user.email }}
+                  </div>
+                  <div class="col-auto">
+                    <q-chip
+                      :color="user.isActive ? 'positive' : 'negative'"
+                      text-color="white"
+                      :label="user.isActive ? 'Aktif' : 'Nonaktif'"
+                      size="sm"
+                      dense
+                    />
+                  </div>
+                  <div class="col-auto" v-if="user.created_at || user.createdAt">
+                    <q-icon name="event" size="xs" class="q-mr-xs" />
+                    {{ formatDate(user.created_at || user.createdAt) }}
+                  </div>
+                </div>
+
+                <div class="row q-gutter-xs">
+                  <q-btn
+                    flat
+                    dense
+                    color="warning"
+                    icon="edit"
+                    label="Edit"
+                    @click="editUser(user)"
+                    size="sm"
+                    no-caps
+                  />
+                  <q-btn
+                    flat
+                    dense
+                    color="negative"
+                    icon="delete"
+                    label="Hapus"
+                    @click="deleteUser(user)"
+                    :disable="isSubmitting"
+                    size="sm"
+                    no-caps
+                  />
+                </div>
+              </q-card-section>
+            </q-card>
+
+            <!-- Mobile Pagination -->
+            <div class="row justify-center q-mt-md" v-if="pagination.rowsNumber > pagination.rowsPerPage">
+              <q-pagination
+                v-model="pagination.page"
+                :max="Math.ceil(pagination.rowsNumber / pagination.rowsPerPage)"
+                :max-pages="5"
+                direction-links
+                boundary-links
+                @update:model-value="onPageChange"
+                color="primary"
+                size="sm"
+              />
+            </div>
+          </div>
+        </div>
       </q-card-section>
     </q-card>
+
+    </q-pull-to-refresh>
+
+    <!-- Floating Action Button (Mobile Only) -->
+    <q-page-sticky position="bottom-right" :offset="[18, 18]" class="lt-sm">
+      <q-btn
+        fab
+        icon="add"
+        color="primary"
+        @click="openCreateDialog"
+        class="fab-button"
+        size="lg"
+      >
+        <q-tooltip
+          anchor="center left"
+          self="center right"
+          :offset="[10, 0]"
+          class="bg-primary text-subtitle2"
+        >
+          Tambah User Baru
+        </q-tooltip>
+      </q-btn>
+    </q-page-sticky>
 
     <!-- Create/Edit User Dialog -->
     <q-dialog v-model="showCreateDialog" persistent>
@@ -329,6 +460,16 @@ const fetchUsers = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+const onRefresh = async (done) => {
+  await fetchUsers()
+  done()
+}
+
+const onPageChange = (page) => {
+  pagination.value.page = page
+  fetchUsers()
 }
 
 const onRequest = (props) => {
@@ -653,3 +794,32 @@ watch(isSubmitting, (newVal, oldVal) => {
   console.log('isSubmitting changed:', { from: oldVal, to: newVal })
 })
 </script>
+
+<style scoped>
+/* Modern Card Styling */
+.modern-card {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.modern-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Floating Action Button */
+.fab-button {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab-button:hover {
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.fab-button:active {
+  transform: scale(0.95);
+}
+</style>

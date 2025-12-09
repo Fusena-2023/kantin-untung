@@ -1,29 +1,33 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="row q-mb-lg items-center">
-      <div class="col">
-        <h4 class="text-h4 q-ma-none">
-          {{ isEdit ? 'Edit Transaksi' : 'Tambah Transaksi' }}
-        </h4>
-        <p class="text-subtitle1 text-grey-7">
-          {{ isEdit ? 'Ubah data transaksi' : 'Buat transaksi baru' }}
-        </p>
-      </div>
-      <div class="col-auto">
+  <q-page class="q-pa-sm q-pa-md-md">
+    <div class="row q-mb-md items-center">
+      <div class="col-auto q-mr-sm">
         <q-btn
           flat
-          color="grey"
+          round
+          dense
+          color="grey-7"
           icon="arrow_back"
-          label="Kembali"
           @click="$router.back()"
-        />
+          size="md"
+        >
+          <q-tooltip>Kembali</q-tooltip>
+        </q-btn>
+      </div>
+      <div class="col">
+        <h4 class="text-h5 text-h4-md q-ma-none">
+          {{ isEdit ? 'Edit Transaksi' : 'Tambah Transaksi' }}
+        </h4>
+        <p class="text-caption text-subtitle1-md text-grey-7 q-mb-none">
+          {{ isEdit ? 'Ubah data transaksi' : 'Buat transaksi baru' }}
+        </p>
       </div>
     </div>
 
     <q-card>
-      <q-card-section>
+      <q-card-section class="q-pa-sm q-pa-md-md">
         <q-form @submit="onSubmit" @reset="onReset" ref="transactionForm">
-          <div class="row q-gutter-md">
+          <div class="row q-col-gutter-sm q-col-gutter-md-md">
             <!-- 1. Tipe Transaksi -->
             <div class="col-12 col-md-6">
               <q-select
@@ -135,28 +139,40 @@
             </div>
           </div>
 
-          <div class="row q-gutter-md q-mt-md">
-            <q-btn
-              label="Simpan"
-              type="submit"
-              color="primary"
-              :loading="isLoading"
-              class="col-auto"
-            />
-            <q-btn
-              label="Reset"
-              type="reset"
-              color="grey"
-              flat
-              class="col-auto"
-            />
-            <q-btn
-              label="Batal"
-              color="grey"
-              flat
-              @click="$router.back()"
-              class="col-auto"
-            />
+          <div class="row q-col-gutter-sm q-mt-sm q-mt-md-md">
+            <div class="col-12 col-sm-4">
+              <q-btn
+                label="Simpan"
+                type="submit"
+                color="primary"
+                :loading="isLoading"
+                class="full-width"
+                no-caps
+                icon="save"
+              />
+            </div>
+            <div class="col-6 col-sm-4">
+              <q-btn
+                label="Reset"
+                type="reset"
+                color="grey"
+                outline
+                class="full-width"
+                no-caps
+                icon="refresh"
+              />
+            </div>
+            <div class="col-6 col-sm-4">
+              <q-btn
+                label="Batal"
+                color="grey"
+                flat
+                @click="$router.back()"
+                class="full-width"
+                no-caps
+                icon="close"
+              />
+            </div>
           </div>
         </q-form>
       </q-card-section>
