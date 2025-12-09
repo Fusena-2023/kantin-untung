@@ -66,8 +66,7 @@ router.get('/', [
     if (search) {
       whereCondition[require('sequelize').Op.or] = [
         { description: { [require('sequelize').Op.iLike]: `%${search}%` } },
-        { category: { [require('sequelize').Op.iLike]: `%${search}%` } },
-        { notes: { [require('sequelize').Op.iLike]: `%${search}%` } }
+        { category: { [require('sequelize').Op.iLike]: `%${search}%` } }
       ];
     }
 
@@ -171,14 +170,9 @@ router.post('/', [
     .optional()
     .isISO8601()
     .withMessage('Format tanggal tidak valid'),
-  body('notes')
-    .optional()
-    .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Notes maksimal 1000 karakter'),
 ], validateInput, async (req, res) => {
   try {
-    const { type, amount, description, category, transactionDate, notes } = req.body;
+    const { type, amount, description, category, transactionDate } = req.body;
 
     const transaction = await Transaction.create({
       type,
@@ -186,7 +180,6 @@ router.post('/', [
       description,
       category,
       transactionDate: transactionDate || new Date(),
-      notes,
       userId: req.user.id
     });
 
@@ -234,11 +227,6 @@ router.put('/:id', [
   body('transactionDate')
     .isISO8601()
     .withMessage('Format tanggal tidak valid'),
-  body('notes')
-    .optional()
-    .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Notes maksimal 1000 karakter'),
 ], validateInput, async (req, res) => {
   try {
     const { id } = req.params;

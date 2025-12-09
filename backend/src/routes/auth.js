@@ -38,12 +38,10 @@ router.post('/register', [
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Nama lengkap harus 2-100 karakter'),
-  body('role')
-    .isInt({ min: 1, max: 2 })
-    .withMessage('Role harus 1 (pemilik) atau 2 (pegawai)'),
 ], validateInput, async (req, res) => {
   try {
-    const { username, email, password, fullName, role } = req.body;
+    const { username, email, password, fullName } = req.body;
+    const role = 2; // Force role pegawai untuk registrasi publik
 
     const existingUser = await User.findOne({
       where: {

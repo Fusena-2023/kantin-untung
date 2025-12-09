@@ -51,13 +51,6 @@ const Transaction = sequelize.define('Transaction', {
       key: 'id',
     },
   },
-  notes: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    validate: {
-      len: [0, 1000],
-    },
-  },
 }, {
   tableName: 'transactions',
   timestamps: true,

@@ -24,6 +24,7 @@
       <q-card-section>
         <q-form @submit="onSubmit" @reset="onReset" ref="transactionForm">
           <div class="row q-gutter-md">
+            <!-- 1. Tipe Transaksi -->
             <div class="col-12 col-md-6">
               <q-select
                 v-model="form.type"
@@ -40,6 +41,27 @@
               </q-select>
             </div>
 
+            <!-- 2. Kategori -->
+            <div class="col-12 col-md-6">
+              <q-select
+                v-model="form.category"
+                label="Kategori *"
+                :options="categoryOptions"
+                emit-value
+                map-options
+                outlined
+                :rules="[val => !!val || 'Kategori diperlukan']"
+                :loading="categoriesLoading"
+                :disable="!form.type"
+                :hint="!form.type ? 'Pilih tipe transaksi terlebih dahulu' : ''"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="category" />
+                </template>
+              </q-select>
+            </div>
+
+            <!-- 3. Jumlah -->
             <div class="col-12 col-md-6">
               <q-input
                 v-model.number="form.amount"
@@ -60,6 +82,7 @@
               </q-input>
             </div>
 
+            <!-- 4. Deskripsi -->
             <div class="col-12 col-md-6">
               <q-input
                 v-model="form.description"
@@ -78,23 +101,7 @@
               </q-input>
             </div>
 
-            <div class="col-12 col-md-6">
-              <q-select
-                v-model="form.category"
-                label="Kategori *"
-                :options="categoryOptions"
-                emit-value
-                map-options
-                outlined
-                :rules="[val => !!val || 'Kategori diperlukan']"
-                :loading="categoriesLoading"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="category" />
-                </template>
-              </q-select>
-            </div>
-
+            <!-- 5. Tanggal Transaksi -->
             <div class="col-12 col-md-6">
               <q-input
                 v-model="form.transactionDate"
@@ -123,23 +130,6 @@
                       </q-time>
                     </q-popup-proxy>
                   </q-icon>
-                </template>
-              </q-input>
-            </div>
-
-            <div class="col-12">
-              <q-input
-                v-model="form.notes"
-                label="Catatan"
-                type="textarea"
-                outlined
-                rows="3"
-                :rules="[val => !val || val.length <= 1000 || 'Catatan maksimal 1000 karakter']"
-                counter
-                maxlength="1000"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="note" />
                 </template>
               </q-input>
             </div>
@@ -195,8 +185,7 @@ const form = ref({
   description: '',
   category: '',
   transactionDate: new Date().toISOString().split('T')[0],
-  transactionTime: new Date().toTimeString().split(' ')[0].substring(0, 5),
-  notes: ''
+  transactionTime: new Date().toTimeString().split(' ')[0].substring(0, 5)
 })
 
 const typeOptions = [
@@ -257,8 +246,7 @@ const loadTransaction = async () => {
       description: transaction.description,
       category: transaction.category,
       transactionDate: transactionDateTime.toISOString().split('T')[0],
-      transactionTime: transactionDateTime.toTimeString().split(' ')[0].substring(0, 5),
-      notes: transaction.notes || ''
+      transactionTime: transactionDateTime.toTimeString().split(' ')[0].substring(0, 5)
     }
 
     // Load categories after setting the type
@@ -284,8 +272,7 @@ const onSubmit = async () => {
       amount: form.value.amount,
       description: form.value.description.trim(),
       category: form.value.category.trim(),
-      transactionDate: transactionDateTime.toISOString(),
-      notes: form.value.notes?.trim() || null
+      transactionDate: transactionDateTime.toISOString()
     }
 
     console.log('Sending transaction data:', transactionData)
@@ -321,8 +308,7 @@ const onReset = () => {
       description: '',
       category: '',
       transactionDate: new Date().toISOString().split('T')[0],
-      transactionTime: new Date().toTimeString().split(' ')[0].substring(0, 5),
-      notes: ''
+      transactionTime: new Date().toTimeString().split(' ')[0].substring(0, 5)
     }
   }
 }

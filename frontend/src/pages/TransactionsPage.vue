@@ -43,39 +43,67 @@
             emit-value
             map-options
             clearable
+            use-input
+            input-debounce="0"
             class="col-12 col-md-2"
+            @update:model-value="loadCategories"
+            @filter="filterTypeOptions"
           />
 
-          <q-input
+          <q-select
             v-model="filters.category"
             label="Kategori"
             outlined
+            :options="filteredCategoryOptions"
+            emit-value
+            map-options
+            clearable
+            use-input
+            input-debounce="0"
             class="col-12 col-md-2"
+            :loading="categoriesLoading"
+            @filter="filterCategoryOptions"
           />
 
           <q-input
-            v-model="filters.startDate"
-            label="Tanggal Mulai"
-            type="date"
+            v-model="dateRangeText"
+            label="Rentang Tanggal"
             outlined
-            class="col-12 col-md-2"
-          />
+            readonly
+            class="col-12 col-md-3"
+            clearable
+            @clear="clearDateRange"
+          >
+            <template v-slot:prepend>
+              <q-icon name="event" class="cursor-pointer">
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                  <q-date
+                    v-model="dateRange"
+                    range
+                    mask="YYYY-MM-DD"
+                  >
+                    <div class="row items-center justify-end">
+                      <q-btn v-close-popup label="OK" color="primary" flat />
+                    </div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input>
 
-          <q-input
-            v-model="filters.endDate"
-            label="Tanggal Akhir"
-            type="date"
-            outlined
-            class="col-12 col-md-2"
-          />
-
-          <div class="col-12 col-md-1">
+          <div class="col-12 col-md-auto q-gutter-sm">
             <q-btn
               color="primary"
               icon="search"
               label="Filter"
               @click="applyFilters"
-              class="full-width"
+            />
+            <q-btn
+              color="grey"
+              icon="refresh"
+              label="Reset"
+              outline
+              @click="resetFilters"
             />
           </div>
         </div>
@@ -189,13 +217,6 @@
               outlined
             />
             <q-input
-              label="Catatan"
-              :model-value="selectedTransaction.notes || '-'"
-              readonly
-              outlined
-              type="textarea"
-            />
-            <q-input
               label="Dibuat oleh"
               :model-value="selectedTransaction.user?.fullName || '-'"
               readonly
@@ -217,11 +238,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from 'stores/auth-store'
 import { useTransactionStore } from 'stores/transaction-store'
 import { formatCurrency, formatDate } from 'src/utils/format'
+import categoryService from 'src/services/category'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -229,6 +251,9 @@ const transactionStore = useTransactionStore()
 
 const showViewDialog = ref(false)
 const selectedTransaction = ref(null)
+const categoriesLoading = ref(false)
+const categoryOptions = ref([])
+const filteredCategoryOptions = ref([])
 
 const filters = reactive({
   search: '',
@@ -242,6 +267,90 @@ const typeOptions = [
   { label: 'Pemasukan', value: 'masuk' },
   { label: 'Pengeluaran', value: 'keluar' }
 ]
+
+const filterTypeOptions = (val, update) => {
+  update(() => {
+    // typeOptions tidak perlu difilter karena cuma 2 item
+  })
+}
+
+const filterCategoryOptions = (val, update) => {
+  update(() => {
+    if (val === '') {
+      filteredCategoryOptions.value = categoryOptions.value
+    } else {
+      const needle = val.toLowerCase()
+      filteredCategoryOptions.value = categoryOptions.value.filter(
+        v => v.label.toLowerCase().indexOf(needle) > -1
+      )
+    }
+  })
+}
+
+const dateRange = ref(null)
+const dateRangeText = computed(() => {
+  if (!dateRange.value) return ''
+  if (typeof dateRange.value === 'string') {
+    return dateRange.value
+  }
+  if (dateRange.value.from && dateRange.value.to) {
+    return `${formatDateShort(dateRange.value.from)} - ${formatDateShort(dateRange.value.to)}`
+  }
+  return ''
+})
+
+const formatDateShort = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+const clearDateRange = () => {
+  dateRange.value = null
+  filters.startDate = null
+  filters.endDate = null
+}
+
+const loadCategories = async () => {
+  if (!filters.type) {
+    categoryOptions.value = []
+    filteredCategoryOptions.value = []
+    filters.category = null
+    return
+  }
+
+  try {
+    categoriesLoading.value = true
+    const response = await categoryService.getCategories(filters.type)
+
+    if (response.data && response.data.data && response.data.data.categories) {
+      categoryOptions.value = response.data.data.categories.map(cat => ({
+        label: cat.name,
+        value: cat.name
+      }))
+      filteredCategoryOptions.value = categoryOptions.value
+    } else {
+      categoryOptions.value = []
+      filteredCategoryOptions.value = []
+    }
+  } catch (error) {
+    console.error('Error loading categories:', error)
+    categoryOptions.value = []
+    filteredCategoryOptions.value = []
+  } finally {
+    categoriesLoading.value = false
+  }
+}
+
+watch(dateRange, (newVal) => {
+  if (!newVal) {
+    filters.startDate = null
+    filters.endDate = null
+  } else if (typeof newVal === 'object' && newVal.from) {
+    filters.startDate = newVal.from
+    filters.endDate = newVal.to || newVal.from
+  }
+})
 
 const columns = [
   {
@@ -322,6 +431,20 @@ const applyFilters = () => {
   })
 
   transactionStore.setFilters(cleanedFilters)
+  fetchTransactions()
+}
+
+const resetFilters = () => {
+  filters.search = ''
+  filters.type = null
+  filters.category = null
+  filters.startDate = null
+  filters.endDate = null
+  dateRange.value = null
+  categoryOptions.value = []
+  filteredCategoryOptions.value = []
+
+  transactionStore.setFilters({})
   fetchTransactions()
 }
 

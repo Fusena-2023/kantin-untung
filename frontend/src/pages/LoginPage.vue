@@ -54,6 +54,13 @@
                 class="col"
               />
             </div>
+
+            <div class="text-center q-mt-md">
+              <span class="text-grey-7">Belum punya akun?</span>
+              <router-link to="/register" class="text-primary text-weight-medium q-ml-xs">
+                Daftar di sini
+              </router-link>
+            </div>
           </q-form>
         </q-card-section>
       </q-card>
@@ -109,3 +116,13 @@ const onReset = () => {
   form.value.password = ''
 }
 </script>
+
+<style scoped>
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+</style>

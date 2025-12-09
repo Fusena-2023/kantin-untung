@@ -10,20 +10,10 @@
           </router-link>
         </q-toolbar-title>
 
-        <!-- User Info & Logout -->
+        <!-- User Info -->
         <div v-if="isAuthenticated" class="row items-center q-gutter-sm">
           <q-icon name="person" />
           <span>{{ user?.fullName }}</span>
-          <q-btn
-            flat
-            dense
-            round
-            icon="logout"
-            @click="handleLogout"
-            color="white"
-          >
-            <q-tooltip>Logout</q-tooltip>
-          </q-btn>
         </div>
       </q-toolbar>
     </q-header>

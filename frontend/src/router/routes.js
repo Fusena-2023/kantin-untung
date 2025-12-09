@@ -15,6 +15,17 @@ const routes = [
     ]
   },
   {
+    path: '/register',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        path: '',
+        component: () => import('pages/RegisterPage.vue'),
+        meta: { requiresGuest: true }
+      }
+    ]
+  },
+  {
     path: '/app',
     component: () => import('layouts/MainLayout.vue'),
     meta: { requiresAuth: true },
