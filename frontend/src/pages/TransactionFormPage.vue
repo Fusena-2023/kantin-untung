@@ -288,6 +288,8 @@ const onSubmit = async () => {
       notes: form.value.notes?.trim() || null
     }
 
+    console.log('Sending transaction data:', transactionData)
+
     if (isEdit.value) {
       await transactionStore.updateTransaction(transactionId.value, transactionData)
       // Simple alert instead of $q.notify

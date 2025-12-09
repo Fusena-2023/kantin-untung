@@ -1,4 +1,5 @@
-const { sequelize, User, Transaction, Role, Category } = require('./models');
+const { sequelize, User, Transaction, Role, Category, Branch } = require('./models');
+const { createDefaultBranches } = require('./seeders/createBranches');
 
 async function initializeDatabase() {
   try {
@@ -7,6 +8,9 @@ async function initializeDatabase() {
     // Sync database - drop and recreate tables
     await sequelize.sync({ force: true });
     console.log('✅ Database synchronized');
+
+    // Create branches first
+    await createDefaultBranches();
 
     // Seed roles
     console.log('🔄 Creating roles...');
@@ -67,23 +71,57 @@ async function initializeDatabase() {
     ]);
     console.log('✅ Categories created successfully');
 
-    // Seed default users
+    // Seed default users with branches
     console.log('🔄 Creating default users...');
+    
+    // Get created branches
+    const pabrikBranch = await Branch.findOne({ where: { code: 'PABRIK' } });
+    const kantorBranch = await Branch.findOne({ where: { code: 'KANTOR' } });
+    
     const defaultUsers = [
       {
         username: 'admin',
         email: 'admin@kantinuntung.com',
         password: 'admin123',
-        fullName: 'Administrator',
+        fullName: 'Administrator Super',
         role: 1, // pemilik
+        branchId: null, // super admin - access all branches
         isActive: true
       },
       {
-        username: 'pegawai1',
-        email: 'pegawai1@kantinuntung.com',
+        username: 'manager_pabrik',
+        email: 'manager.pabrik@kantinuntung.com',
+        password: 'manager123',
+        fullName: 'Manager Kantin Pabrik',
+        role: 1, // pemilik
+        branchId: pabrikBranch.id,
+        isActive: true
+      },
+      {
+        username: 'manager_kantor',
+        email: 'manager.kantor@kantinuntung.com',
+        password: 'manager123',
+        fullName: 'Manager Kantin Kantor',
+        role: 1, // pemilik
+        branchId: kantorBranch.id,
+        isActive: true
+      },
+      {
+        username: 'pegawai_pabrik',
+        email: 'pegawai.pabrik@kantinuntung.com',
         password: 'pegawai123',
-        fullName: 'Pegawai Satu',
+        fullName: 'Pegawai Kantin Pabrik',
         role: 2, // pegawai
+        branchId: pabrikBranch.id,
+        isActive: true
+      },
+      {
+        username: 'pegawai_kantor',
+        email: 'pegawai.kantor@kantinuntung.com',
+        password: 'pegawai123',
+        fullName: 'Pegawai Kantin Kantor',
+        role: 2, // pegawai
+        branchId: kantorBranch.id,
         isActive: true
       }
     ];
@@ -96,8 +134,15 @@ async function initializeDatabase() {
     console.log('🎉 Database initialization completed successfully!');
     console.log('');
     console.log('📋 Default users:');
-    console.log('   Admin    - username: admin     password: admin123');
-    console.log('   Pegawai  - username: pegawai1  password: pegawai123');
+    console.log('   Super Admin      - username: admin           password: admin123   (All branches)');
+    console.log('   Manager Pabrik   - username: manager_pabrik  password: manager123 (Pabrik only)');
+    console.log('   Manager Kantor   - username: manager_kantor  password: manager123 (Kantor only)');
+    console.log('   Pegawai Pabrik   - username: pegawai_pabrik  password: pegawai123 (Pabrik only)');
+    console.log('   Pegawai Kantor   - username: pegawai_kantor  password: pegawai123 (Kantor only)');
+    console.log('');
+    console.log('🏢 Branches:');
+    console.log('   PABRIK - Kantin Pabrik (06:00-18:00)');
+    console.log('   KANTOR - Kantin Kantor (07:00-17:00)');
     console.log('');
 
   } catch (error) {

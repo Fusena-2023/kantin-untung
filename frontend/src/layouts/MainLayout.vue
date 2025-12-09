@@ -59,7 +59,7 @@
           </q-item-section>
         </q-item>
 
-        <!-- Users - Only for Pemilik -->
+        <!-- User Management - Only for Pemilik -->
         <q-item
           clickable
           v-ripple
@@ -110,16 +110,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, nextTick } from 'vue'
-import { useAuthStore } from 'stores/auth-store'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useAuthStore } from 'src/stores/auth-store'
 
 const authStore = useAuthStore()
 
 const leftDrawerOpen = ref(false)
-const layoutKey = ref(0)
+const layoutKey = ref(0) // Existing keys
 const drawerKey = ref(0)
 
-// Reactive computed properties untuk memastikan UI update
+// Existing computed properties
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isPemilik = computed(() => authStore.isPemilik)
 const user = computed(() => authStore.user)

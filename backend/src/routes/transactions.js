@@ -73,11 +73,13 @@ router.get('/', [
 
     const { count, rows } = await Transaction.findAndCountAll({
       where: whereCondition,
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'username', 'fullName', 'role']
-      }],
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'username', 'fullName', 'role']
+        }
+      ],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['transactionDate', 'DESC'], ['created_at', 'DESC']]
@@ -119,11 +121,13 @@ router.get('/:id', [
 
     const transaction = await Transaction.findOne({
       where: whereCondition,
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'username', 'fullName', 'role']
-      }]
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'username', 'fullName', 'role']
+        }
+      ]
     });
 
     if (!transaction) {
@@ -187,11 +191,13 @@ router.post('/', [
     });
 
     const newTransaction = await Transaction.findByPk(transaction.id, {
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'username', 'fullName', 'role']
-      }]
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'username', 'fullName', 'role']
+        }
+      ]
     });
 
     res.status(201).json({
@@ -257,11 +263,13 @@ router.put('/:id', [
     await transaction.update(updateData);
 
     const updatedTransaction = await Transaction.findByPk(id, {
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'username', 'fullName', 'role']
-      }]
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'username', 'fullName', 'role']
+        }
+      ]
     });
 
     res.json({
@@ -362,11 +370,13 @@ router.patch('/:id', [
     await transaction.update(updateData);
 
     const updatedTransaction = await Transaction.findByPk(id, {
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'username', 'fullName', 'role']
-      }]
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'username', 'fullName', 'role']
+        }
+      ]
     });
 
     res.json({
