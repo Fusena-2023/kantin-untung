@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf" :key="layoutKey">
-    <q-header elevated>
+    <q-header elevated v-if="isAuthenticated">
       <q-toolbar>
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" v-if="isAuthenticated" />
 
