@@ -68,15 +68,17 @@
             <!-- 3. Jumlah -->
             <div class="col-12 col-md-6">
               <q-input
-                v-model.number="form.amount"
+                :model-value="formatCurrency(form.amount)"
+                @update:model-value="updateAmount"
                 label="Jumlah *"
-                type="number"
-                step="0.01"
-                min="0.01"
+                type="text"
+                inputmode="decimal"
                 outlined
+                @keydown="onlyNumbers"
                 :rules="[
-                  val => !!val || 'Jumlah diperlukan',
-                  val => val > 0 || 'Jumlah harus lebih dari 0'
+                  val => form.amount !== null && form.amount !== '' || 'Jumlah diperlukan',
+                  val => !isNaN(form.amount) || 'Jumlah harus berupa angka',
+                  val => form.amount > 0 || 'Jumlah harus lebih dari 0'
                 ]"
                 prefix="Rp"
               >
@@ -90,11 +92,10 @@
             <div class="col-12 col-md-6">
               <q-input
                 v-model="form.description"
-                label="Deskripsi *"
+                label="Deskripsi"
                 outlined
                 :rules="[
-                  val => !!val || 'Deskripsi diperlukan',
-                  val => val.length <= 500 || 'Deskripsi maksimal 500 karakter'
+                  val => !val || val.length <= 500 || 'Deskripsi maksimal 500 karakter'
                 ]"
                 counter
                 maxlength="500"
@@ -195,13 +196,28 @@ const isLoading = ref(false)
 const categoriesLoading = ref(false)
 const categoryOptions = ref([])
 
+// Helper function to get date string in local timezone (YYYY-MM-DD)
+const getLocalDateString = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Helper function to get time string in local timezone (HH:mm)
+const getLocalTimeString = (date) => {
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
 const form = ref({
   type: '',
   amount: null,
   description: '',
   category: '',
-  transactionDate: new Date().toISOString().split('T')[0],
-  transactionTime: new Date().toTimeString().split(' ')[0].substring(0, 5)
+  transactionDate: getLocalDateString(new Date()),
+  transactionTime: getLocalTimeString(new Date())
 })
 
 const typeOptions = [
@@ -239,12 +255,40 @@ const loadCategories = async () => {
   } finally {
     categoriesLoading.value = false
   }
-}// Watch for type changes to reload categories
+}
+
+// Watch for type changes to reload categories
 const typeWatcher = computed(() => form.value.type)
 watch(typeWatcher, () => {
   loadCategories()
   form.value.category = '' // Reset category when type changes
 })
+
+// Format currency with thousand separator
+const formatCurrency = (value) => {
+  if (!value) return ''
+  const numValue = typeof value === 'string' ? parseInt(value.replace(/\D/g, '')) : value
+  if (isNaN(numValue)) return ''
+  return numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
+// Update amount value from formatted input
+const updateAmount = (value) => {
+  // Remove all non-digit characters except decimal point
+  const cleanedValue = value.replace(/\D/g, '')
+  form.value.amount = cleanedValue ? parseInt(cleanedValue) : null
+}
+
+// Handle only numbers input for amount field
+const onlyNumbers = (event) => {
+  const key = event.key
+  // Allow: numbers, decimal point, and control keys
+  if (!/[0-9.,]|[-]/.test(key) && 
+      !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(key) &&
+      !(event.ctrlKey && (key === 'a' || key === 'c' || key === 'v' || key === 'x'))) {
+    event.preventDefault()
+  }
+}
 
 const loadTransaction = async () => {
   if (!isEdit.value) return
@@ -280,18 +324,39 @@ const onSubmit = async () => {
   try {
     isLoading.value = true
 
-    // Combine date and time
-    const transactionDateTime = new Date(`${form.value.transactionDate}T${form.value.transactionTime}:00`)
+    // Create a date string that represents the local datetime
+    // Format: 2025-12-14T14:30:00 (local time, not UTC)
+    const localDateTimeString = `${form.value.transactionDate}T${form.value.transactionTime}:00`
+    
+    // Parse as local time (not UTC)
+    // We'll create a Date object and then adjust for timezone
+    const parts = localDateTimeString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
+    const year = parseInt(parts[1])
+    const month = parseInt(parts[2]) - 1
+    const day = parseInt(parts[3])
+    const hours = parseInt(parts[4])
+    const minutes = parseInt(parts[5])
+    const seconds = parseInt(parts[6])
+    
+    const transactionDateTime = new Date(year, month, day, hours, minutes, seconds)
+    
+    // Convert to ISO but subtract the timezone offset to get back to local time in ISO format
+    const tzOffset = transactionDateTime.getTimezoneOffset() * 60000
+    const localISOString = new Date(transactionDateTime.getTime() - tzOffset).toISOString()
 
     const transactionData = {
       type: form.value.type,
       amount: form.value.amount,
       description: form.value.description.trim(),
       category: form.value.category.trim(),
-      transactionDate: transactionDateTime.toISOString()
+      transactionDate: localISOString
     }
 
-    console.log('Sending transaction data:', transactionData)
+    console.log('Sending transaction data:', {
+      localDateTime: localDateTimeString,
+      isoString: transactionData.transactionDate,
+      serverReceives: new Date(localISOString)
+    })
 
     if (isEdit.value) {
       await transactionStore.updateTransaction(transactionId.value, transactionData)
@@ -323,8 +388,8 @@ const onReset = () => {
       amount: null,
       description: '',
       category: '',
-      transactionDate: new Date().toISOString().split('T')[0],
-      transactionTime: new Date().toTimeString().split(' ')[0].substring(0, 5)
+      transactionDate: getLocalDateString(new Date()),
+      transactionTime: getLocalTimeString(new Date())
     }
   }
 }

@@ -2,7 +2,7 @@ const express = require('express');
 const { query, validationResult } = require('express-validator');
 const { Transaction, User } = require('../models');
 const { authorize } = require('../middleware/auth');
-const { Op } = require('sequelize');
+const { Op, fn, col, where } = require('sequelize');
 const sequelize = require('../config/database');
 
 const router = express.Router();
@@ -24,28 +24,43 @@ const validateInput = (req, res, next) => {
 router.get('/dashboard', authorize(1), async (req, res) => {
   try {
     const today = new Date();
+    
+    console.log('Current server time:', today);
+    console.log('Current UTC time:', today.toUTCString());
+
+    // Get today's date as YYYY-MM-DD string (in local timezone)
+    const todayYear = today.getFullYear();
+    const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+    const todayDate = String(today.getDate()).padStart(2, '0');
+    const todayString = `${todayYear}-${todayMonth}-${todayDate}`;
+    
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
-    // Today's summary
+    console.log('Today string (for comparison):', todayString);
+
+    // Today's summary - using date string comparison
     const todayTransactions = await Transaction.findAll({
-      where: {
-        transactionDate: {
-          [Op.between]: [startOfDay, endOfDay]
-        }
-      }
+      where: where(
+        fn('DATE', col('transaction_date')),
+        Op.eq,
+        todayString
+      )
     });
 
-    // This month's summary
+    console.log('Today transactions found:', todayTransactions.length);
+
+    // This month's summary - using date range
     const monthTransactions = await Transaction.findAll({
       where: {
         transactionDate: {
-          [Op.between]: [startOfMonth, endOfMonth]
+          [Op.gte]: startOfMonth,
+          [Op.lt]: new Date(endOfMonth.getTime() + 86400000) // Add 1 day
         }
       }
     });
+
+    console.log('Month transactions found:', monthTransactions.length);
 
     // Calculate totals
     const todayIncome = todayTransactions
@@ -79,20 +94,26 @@ router.get('/dashboard', authorize(1), async (req, res) => {
       }]
     });
 
-    // Last 7 days data for chart
+    // Last 7 days data for chart (including today)
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+      date.setDate(date.getDate() - i);  // Use local timezone, not UTC
+      
+      // Format date in local timezone (YYYY-MM-DD)
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
+      
+      console.log(`7 days chart - Day ${7 - i}: ${dateString}`);
 
       const dayTransactions = await Transaction.findAll({
-        where: {
-          transactionDate: {
-            [Op.between]: [dayStart, dayEnd]
-          }
-        }
+        where: where(
+          fn('DATE', col('transaction_date')),
+          Op.eq,
+          dateString
+        )
       });
 
       const dayIncome = dayTransactions
@@ -104,7 +125,7 @@ router.get('/dashboard', authorize(1), async (req, res) => {
         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
       last7Days.push({
-        date: dayStart.toISOString().split('T')[0],
+        date: dateString,
         income: dayIncome,
         expense: dayExpense,
         profit: dayIncome - dayExpense,
@@ -175,15 +196,21 @@ router.get('/daily', [
 ], validateInput, authorize(1), async (req, res) => {
   try {
     const targetDate = req.query.date ? new Date(req.query.date) : new Date();
-    const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-    const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59);
+    
+    // Format date in local timezone (YYYY-MM-DD)
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    const targetDateString = `${year}-${month}-${day}`;
+
+    console.log('Daily report for:', targetDateString);
 
     const transactions = await Transaction.findAll({
-      where: {
-        transactionDate: {
-          [Op.between]: [startOfDay, endOfDay]
-        }
-      },
+      where: where(
+        fn('DATE', col('transaction_date')),
+        Op.eq,
+        targetDateString
+      ),
       include: [{
         model: User,
         as: 'user',
@@ -236,7 +263,7 @@ router.get('/daily', [
       success: true,
       message: 'Laporan harian berhasil diambil',
       data: {
-        date: targetDate.toISOString().split('T')[0],
+        date: targetDateString,
         summary,
         transactions,
         byCategory: Object.values(byCategory)
@@ -260,15 +287,16 @@ router.get('/monthly', [
     const year = parseInt(req.query.year) || new Date().getFullYear();
     const month = parseInt(req.query.month) || new Date().getMonth() + 1;
     
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0);
+    const startOfMonthString = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endOfMonthDate = new Date(year, month, 0);
+    const endOfMonthString = `${year}-${String(month).padStart(2, '0')}-${String(endOfMonthDate.getDate()).padStart(2, '0')}`;
 
     const transactions = await Transaction.findAll({
-      where: {
-        transactionDate: {
-          [Op.between]: [startOfMonth, endOfMonth]
-        }
-      },
+      where: sequelize.where(
+        sequelize.fn('DATE', sequelize.col('transaction_date')),
+        Op.between,
+        [startOfMonthString, endOfMonthString]
+      ),
       include: [{
         model: User,
         as: 'user',
@@ -376,11 +404,10 @@ router.get('/range', [
   query('endDate').isISO8601().withMessage('Format tanggal akhir tidak valid')
 ], validateInput, authorize(1), async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const startDate = req.query.startDate.split('T')[0];
+    const endDate = req.query.endDate.split('T')[0];
 
-    if (start > end) {
+    if (startDate > endDate) {
       return res.status(400).json({
         success: false,
         message: 'Tanggal mulai harus lebih kecil dari tanggal akhir'
@@ -388,11 +415,11 @@ router.get('/range', [
     }
 
     const transactions = await Transaction.findAll({
-      where: {
-        transactionDate: {
-          [Op.between]: [start, end]
-        }
-      },
+      where: sequelize.where(
+        sequelize.fn('DATE', sequelize.col('transaction_date')),
+        Op.between,
+        [startDate, endDate]
+      ),
       include: [{
         model: User,
         as: 'user',
