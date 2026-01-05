@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import AuthService from 'src/services/auth'
+import { useTransactionStore } from 'stores/transaction-store'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -10,71 +11,96 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.token,
-    userRole: (state) => state.user?.role,
+    isAuthenticated: (state) => Boolean(state.token),
+    userRole: (state) => state.user?.role ?? null,
     isPemilik: (state) => state.user?.role === 'pemilik',
     isPegawai: (state) => state.user?.role === 'pegawai'
   },
 
   actions: {
+    // =========================
+    // 🔐 LOGIN
+    // =========================
     async login(credentials) {
       this.isLoading = true
       try {
         const { user, token } = await AuthService.login(credentials)
+
         this.user = user
         this.token = token
-        this.isInitialized = true // Ensure initialized flag is set
-        // Set token in AuthService to add to axios headers
+        this.isInitialized = true
+
         AuthService.setToken(token)
+
         return user
       } finally {
         this.isLoading = false
       }
     },
 
+    // =========================
+    // 📝 REGISTER
+    // =========================
     async register(userData) {
       this.isLoading = true
       try {
         const { user, token } = await AuthService.register(userData)
+
         this.user = user
         this.token = token
+        this.isInitialized = true
+
+        AuthService.setToken(token)
+
         return user
       } finally {
         this.isLoading = false
       }
     },
 
+    // =========================
+    // 🚪 LOGOUT (CLEAN)
+    // =========================
     async logout() {
       this.isLoading = true
       try {
-        // Kirim request logout ke server untuk blacklist token
         await AuthService.logout()
       } catch (error) {
         console.warn('Logout API failed:', error)
-        // Tetap lanjutkan logout meski API gagal
       } finally {
-        // Clear all auth data
-        this.user = null
-        this.token = null
-        this.isInitialized = false
-        this.isLoading = false
+        this.clearAuth()
 
-        // Pastikan token dihapus dari localStorage dan axios headers
-        AuthService.removeToken()
+        // 🔥 CLEAR STORE LAIN (PENTING)
+        const transactionStore = useTransactionStore()
+        transactionStore.clear()
+
+        this.isLoading = false
       }
     },
 
-    initializeAuth() {
+    // =========================
+    // ♻️ INIT AUTH (WAJIB ASYNC)
+    // =========================
+    async initializeAuth() {
       const token = AuthService.getToken()
-      if (token && AuthService.isAuthenticated()) {
-        this.token = token
-        // Set token in AuthService headers
+
+      if (!token) {
+        this.clearAuth()
+        this.isInitialized = true
+        return
+      }
+
+      try {
         AuthService.setToken(token)
-        try {
-          // Decode token to get user info
+        this.token = token
+
+        // 🔹 Jika backend punya endpoint /me → pakai itu
+        if (AuthService.me) {
+          this.user = await AuthService.me()
+        } else {
+          // 🔹 Fallback decode JWT
           const payload = JSON.parse(atob(token.split('.')[1]))
 
-          // Map payload properties correctly
           this.user = {
             id: payload.userId || payload.id,
             username: payload.username,
@@ -82,28 +108,23 @@ export const useAuthStore = defineStore('auth', {
             fullName: payload.fullName || payload.name,
             email: payload.email
           }
-        } catch (error) {
-          console.warn('Failed to decode token, clearing auth:', error)
-          this.clearAuth()
         }
-      } else {
+      } catch (error) {
+        console.warn('Initialize auth failed, clearing auth:', error)
         this.clearAuth()
+      } finally {
+        this.isInitialized = true
       }
-      this.isInitialized = true
     },
 
+    // =========================
+    // 🧹 CLEAR AUTH (INTERNAL)
+    // =========================
     clearAuth() {
       this.user = null
       this.token = null
-      AuthService.removeToken()
-    },
-
-    $reset() {
-      this.user = null
-      this.token = null
-      this.isLoading = false
       this.isInitialized = false
-      this.clearAuth()
+      AuthService.removeToken()
     }
   }
 })

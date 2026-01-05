@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useAuthStore } from 'stores/auth-store'
 import TransactionService from 'src/services/transaction'
 
 export const useTransactionStore = defineStore('transaction', {
@@ -22,39 +23,53 @@ export const useTransactionStore = defineStore('transaction', {
   }),
 
   getters: {
-    totalIncome: (state) => {
-      return state.transactions
+    totalIncome: (state) =>
+      state.transactions
         .filter(t => t.type === 'masuk')
-        .reduce((sum, t) => sum + parseFloat(t.amount), 0)
-    },
-    totalExpense: (state) => {
-      return state.transactions
+        .reduce((sum, t) => sum + Number(t.amount), 0),
+
+    totalExpense: (state) =>
+      state.transactions
         .filter(t => t.type === 'keluar')
-        .reduce((sum, t) => sum + parseFloat(t.amount), 0)
-    },
-    profit: (state) => {
-      return state.totalIncome - state.totalExpense
-    }
+        .reduce((sum, t) => sum + Number(t.amount), 0),
+
+    profit: (state) =>
+      state.transactions
+        .filter(t => t.type === 'masuk')
+        .reduce((sum, t) => sum + Number(t.amount), 0)
+      -
+      state.transactions
+        .filter(t => t.type === 'keluar')
+        .reduce((sum, t) => sum + Number(t.amount), 0)
   },
 
   actions: {
+    // =========================
+    // 🔐 SAFE FETCH
+    // =========================
     async fetchTransactions(params = {}) {
+      const authStore = useAuthStore()
+
+      // ⛔ STOP jika belum login
+      if (!authStore.isAuthenticated) {
+        console.warn('Fetch transactions dibatalkan: user belum login')
+        return
+      }
+
       this.isLoading = true
       try {
-        // Filter out empty values from filters
         const cleanFilters = {}
         Object.keys(this.filters).forEach(key => {
           const value = this.filters[key]
-          if (value && value !== '' && value !== null && value !== undefined) {
+          if (value !== null && value !== '' && value !== undefined) {
             cleanFilters[key] = value
           }
         })
 
-        // Filter out empty values from params
         const cleanParams = {}
         Object.keys(params).forEach(key => {
           const value = params[key]
-          if (value && value !== '' && value !== null && value !== undefined) {
+          if (value !== null && value !== '' && value !== undefined) {
             cleanParams[key] = value
           }
         })
@@ -67,13 +82,23 @@ export const useTransactionStore = defineStore('transaction', {
         }
 
         const data = await TransactionService.getTransactions(queryParams)
+
         this.transactions = data.transactions || []
-        this.pagination = data.pagination || { total: 0, page: 1, limit: 10, totalPages: 0 }
+        this.pagination = data.pagination || {
+          total: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 0
+        }
       } catch (error) {
+        // 🔕 Jangan lempar error auth ke UI
+        if (error?.response?.status === 401) {
+          console.warn('Unauthorized, clearing transactions')
+          this.clear()
+          return
+        }
+
         console.error('Fetch transactions error:', error)
-        // Reset to empty state on error
-        this.transactions = []
-        this.pagination = { total: 0, page: 1, limit: 10, totalPages: 0 }
         throw error
       } finally {
         this.isLoading = false
@@ -81,24 +106,29 @@ export const useTransactionStore = defineStore('transaction', {
     },
 
     async fetchTransaction(id) {
+      const authStore = useAuthStore()
+      if (!authStore.isAuthenticated) return
+
       this.isLoading = true
       try {
-        const transaction = await TransactionService.getTransaction(id)
-        this.currentTransaction = transaction
-        return transaction
+        this.currentTransaction =
+          await TransactionService.getTransaction(id)
+        return this.currentTransaction
       } finally {
         this.isLoading = false
       }
     },
 
     async createTransaction(data) {
-      const transaction = await TransactionService.createTransaction(data)
+      const transaction =
+        await TransactionService.createTransaction(data)
       this.transactions.unshift(transaction)
       return transaction
     },
 
     async updateTransaction(id, data) {
-      const transaction = await TransactionService.updateTransaction(id, data)
+      const transaction =
+        await TransactionService.updateTransaction(id, data)
       const index = this.transactions.findIndex(t => t.id === id)
       if (index !== -1) {
         this.transactions[index] = transaction
@@ -108,7 +138,8 @@ export const useTransactionStore = defineStore('transaction', {
 
     async deleteTransaction(id) {
       await TransactionService.deleteTransaction(id)
-      this.transactions = this.transactions.filter(t => t.id !== id)
+      this.transactions =
+        this.transactions.filter(t => t.id !== id)
     },
 
     setFilters(filters) {
@@ -118,17 +149,31 @@ export const useTransactionStore = defineStore('transaction', {
 
     clearFilters() {
       this.filters = {
-        search: '',
-        type: '',
-        category: '',
-        startDate: '',
-        endDate: ''
+        search: null,
+        type: null,
+        category: null,
+        startDate: null,
+        endDate: null
       }
       this.pagination.page = 1
     },
 
     setPage(page) {
       this.pagination.page = page
+    },
+
+    // =========================
+    // 🧹 CLEAR ON LOGOUT
+    // =========================
+    clear() {
+      this.transactions = []
+      this.currentTransaction = null
+      this.pagination = {
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0
+      }
     }
   }
 })

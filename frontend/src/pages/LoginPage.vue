@@ -28,13 +28,20 @@
             <q-input
               v-model="form.password"
               label="Password"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               filled
               :rules="[val => val && val.length > 0 || 'Password diperlukan']"
               class="q-mb-md"
             >
               <template v-slot:prepend>
                 <q-icon name="lock" />
+              </template>
+              <template v-slot:append>
+                <q-icon
+                  :name="showPassword ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  @click="showPassword = !showPassword"
+                />
               </template>
             </q-input>
 
@@ -78,6 +85,8 @@ const form = ref({
   username: '',
   password: ''
 })
+
+const showPassword = ref(false)
 
 const onSubmit = async () => {
   try {
