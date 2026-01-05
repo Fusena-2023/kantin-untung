@@ -7,7 +7,7 @@
             Selamat Datang, {{ authStore.user?.fullName || authStore.user?.username }}!
           </h4>
           <p class="text-caption text-body2-md text-grey-6 q-mb-none">
-            Berikut ringkasan keuangan kantin hari ini
+            Berikut ringkasan keuangan kantin {{ periodLabel }}
           </p>
         </div>
         <div class="col-auto gt-xs">
@@ -22,13 +22,59 @@
         </div>
       </div>
 
+      <!-- Period Filter Tabs -->
+      <q-card class="q-mb-md">
+        <q-tabs
+          v-model="selectedPeriod"
+          dense
+          class="text-primary"
+          active-color="primary"
+          indicator-color="primary"
+          align="left"
+          @update:model-value="onPeriodChange"
+        >
+          <q-tab name="today" label="Hari Ini" />
+          <q-tab name="week" label="7 Hari" />
+          <q-tab name="month" label="Bulan Ini" />
+          <q-tab name="custom" label="Custom" />
+        </q-tabs>
+
+        <!-- Custom Date Range Picker -->
+        <q-slide-transition>
+          <q-card-section v-show="selectedPeriod === 'custom'" class="row q-col-gutter-md">
+            <div class="col-12 col-sm-6">
+              <q-input
+                v-model="customStartDate"
+                type="date"
+                label="Dari Tanggal"
+                filled
+                @update:model-value="onPeriodChange"
+              />
+            </div>
+            <div class="col-12 col-sm-6">
+              <q-input
+                v-model="customEndDate"
+                type="date"
+                label="Sampai Tanggal"
+                filled
+                @update:model-value="onPeriodChange"
+              />
+            </div>
+          </q-card-section>
+        </q-slide-transition>
+      </q-card>
+
     <!-- Summary Cards -->
     <div class="row q-col-gutter-sm q-col-gutter-md-md q-mb-md">
       <div class="col-12 col-sm-6 col-md-3">
         <q-card class="gradient-card gradient-green text-white">
           <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Pemasukan Hari Ini</div>
-            <div class="text-h5 text-h4-md">{{ formatCurrency(reportStore.todayIncome) }}</div>
+            <div class="text-subtitle2 text-h6-md">Pemasukan {{ periodCardLabel }}</div>
+            <div class="text-h5 text-h4-md">{{ formatCurrency(currentPeriodData.income) }}</div>
+            <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs" :class="profitTrend.incomeColor">
+              <q-icon :name="profitTrend.incomeIcon" />
+              {{ profitTrend.incomePercent }}% dari bulan lalu
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -36,8 +82,12 @@
       <div class="col-12 col-sm-6 col-md-3">
         <q-card class="gradient-card gradient-red text-white">
           <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Pengeluaran Hari Ini</div>
-            <div class="text-h5 text-h4-md">{{ formatCurrency(reportStore.todayExpense) }}</div>
+            <div class="text-subtitle2 text-h6-md">Pengeluaran {{ periodCardLabel }}</div>
+            <div class="text-h5 text-h4-md">{{ formatCurrency(currentPeriodData.expense) }}</div>
+            <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs" :class="profitTrend.expenseColor">
+              <q-icon :name="profitTrend.expenseIcon" />
+              {{ profitTrend.expensePercent }}% dari bulan lalu
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -45,8 +95,12 @@
       <div class="col-12 col-sm-6 col-md-3">
         <q-card class="gradient-card gradient-blue text-white">
           <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Keuntungan Hari Ini</div>
-            <div class="text-h5 text-h4-md">{{ formatCurrency(reportStore.todayProfit) }}</div>
+            <div class="text-subtitle2 text-h6-md">Keuntungan {{ periodCardLabel }}</div>
+            <div class="text-h5 text-h4-md">{{ formatCurrency(currentPeriodData.profit) }}</div>
+            <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs" :class="profitTrend.profitColor">
+              <q-icon :name="profitTrend.profitIcon" />
+              {{ profitTrend.profitPercent }}% dari bulan lalu
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -54,9 +108,12 @@
       <div v-if="authStore.user?.role === 'pemilik'" class="col-12 col-sm-6 col-md-3">
         <q-card class="gradient-card gradient-orange text-white">
           <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Total User</div>
-            <div class="text-h5 text-h4-md">{{ dashboard?.users?.total || 0 }}</div>
-            <div class="text-caption">{{ dashboard?.users?.active || 0 }} aktif</div>
+            <div class="text-subtitle2 text-h6-md">Total Transaksi</div>
+            <div class="text-h5 text-h4-md">{{ currentPeriodData.transactions }}</div>
+            <div class="text-caption q-mt-xs">
+              <q-icon name="receipt" size="14px" class="q-mr-xs" />
+              {{ currentPeriodData.transactions }} transaksi
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -85,6 +142,43 @@
     <div class="row q-col-gutter-sm q-col-gutter-md-md">
       <!-- Main Content (Full width on mobile, 8 cols on desktop) -->
       <div class="col-12 col-md-8">
+        <!-- Breakdown per Kategori -->
+        <q-card class="modern-card q-mb-md">
+          <q-card-section class="q-pa-sm q-pa-md-md card-header gradient-header-alt">
+            <div class="text-subtitle1 text-h6-md text-weight-medium text-white">
+              <q-icon name="category" class="q-mr-sm" />
+              Breakdown per Kategori
+            </div>
+          </q-card-section>
+          <q-card-section class="q-pa-none">
+            <q-table
+              v-if="categoryBreakdown.length"
+              :rows="categoryBreakdown"
+              :columns="categoryColumns"
+              row-key="category"
+              flat
+              bordered
+              no-data-label="Belum ada data kategori"
+              class="category-table"
+            >
+              <template v-slot:body-cell-pemasukan="props">
+                <q-td :props="props" class="text-positive text-weight-bold">
+                  {{ formatCurrency(props.row.income) }}
+                </q-td>
+              </template>
+              <template v-slot:body-cell-pengeluaran="props">
+                <q-td :props="props" class="text-negative text-weight-bold">
+                  {{ formatCurrency(props.row.expense) }}
+                </q-td>
+              </template>
+            </q-table>
+            <div v-else class="text-center text-grey-5 q-py-xl">
+              <q-icon name="category" size="64px" class="q-mb-md" />
+              <div class="text-subtitle1">Belum ada data kategori</div>
+            </div>
+          </q-card-section>
+        </q-card>
+
         <!-- Transaksi Terbaru -->
         <q-card class="modern-card q-mb-md">
           <q-card-section class="q-pa-sm q-pa-md-md card-header gradient-header">
@@ -229,10 +323,155 @@ const chartCanvas = ref(null)
 let chartInstance = null
 
 const dashboard = computed(() => reportStore.dashboard)
+const selectedPeriod = ref('month')
+const customStartDate = ref('')
+const customEndDate = ref('')
+
+// Category table columns
+const categoryColumns = [
+  { name: 'kategori', label: 'Kategori', field: 'category', align: 'left' },
+  { name: 'jumlah', label: 'Jumlah', field: 'count', align: 'center' },
+  { name: 'pemasukan', label: 'Pemasukan', field: 'income', align: 'right' },
+  { name: 'pengeluaran', label: 'Pengeluaran', field: 'expense', align: 'right' }
+]
+
+// Computed properties untuk period
+const periodLabel = computed(() => {
+  const today = new Date()
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+
+  switch (selectedPeriod.value) {
+    case 'today':
+      return today.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    case 'week':
+      return '7 Hari Terakhir'
+    case 'month':
+      return `${monthNames[today.getMonth()]} ${today.getFullYear()}`
+    case 'custom':
+      return `${customStartDate.value} - ${customEndDate.value}`
+    default:
+      return ''
+  }
+})
+
+const periodCardLabel = computed(() => {
+  switch (selectedPeriod.value) {
+    case 'today':
+      return 'Hari Ini'
+    case 'week':
+      return '7 Hari'
+    case 'month':
+      return 'Bulan Ini'
+    case 'custom':
+      return 'Custom'
+    default:
+      return ''
+  }
+})
+
+// Get current period data
+const currentPeriodData = computed(() => {
+  const data = dashboard.value
+  if (!data) return { income: 0, expense: 0, profit: 0, transactions: 0 }
+
+  switch (selectedPeriod.value) {
+    case 'today':
+      return {
+        income: data.today?.income || 0,
+        expense: data.today?.expense || 0,
+        profit: data.today?.profit || 0,
+        transactions: data.today?.transactions || 0
+      }
+    case 'week':
+      // Sum last 7 days
+      if (data.dailyData && Array.isArray(data.dailyData)) {
+        const sum = data.dailyData.reduce((acc, day) => ({
+          income: acc.income + (day.income || 0),
+          expense: acc.expense + (day.expense || 0),
+          profit: acc.profit + (day.profit || 0),
+          count: acc.count + 1
+        }), { income: 0, expense: 0, profit: 0, count: 0 })
+        return {
+          income: sum.income,
+          expense: sum.expense,
+          profit: sum.profit,
+          transactions: sum.count
+        }
+      }
+      return { income: 0, expense: 0, profit: 0, transactions: 0 }
+    case 'month':
+      return {
+        income: data.thisMonth?.income || 0,
+        expense: data.thisMonth?.expense || 0,
+        profit: data.thisMonth?.profit || 0,
+        transactions: data.thisMonth?.transactions || 0
+      }
+    case 'custom':
+      // Will be fetched separately
+      return { income: 0, expense: 0, profit: 0, transactions: 0 }
+    default:
+      return { income: 0, expense: 0, profit: 0, transactions: 0 }
+  }
+})
+
+// Previous month comparison
+const profitTrend = computed(() => {
+  const data = dashboard.value
+  if (!data || selectedPeriod.value !== 'month') {
+    return {
+      incomePercent: 0,
+      incomeIcon: 'trending_flat',
+      incomeColor: 'text-grey-6',
+      expensePercent: 0,
+      expenseIcon: 'trending_flat',
+      expenseColor: 'text-grey-6',
+      profitPercent: 0,
+      profitIcon: 'trending_flat',
+      profitColor: 'text-grey-6'
+    }
+  }
+
+  // Calculate previous month
+  const prevMonthIncome = data.prevMonth?.income || data.thisMonth?.income || 1
+  const prevMonthExpense = data.prevMonth?.expense || data.thisMonth?.expense || 1
+  const prevMonthProfit = data.prevMonth?.profit || data.thisMonth?.profit || 1
+
+  const currentIncome = data.thisMonth?.income || 0
+  const currentExpense = data.thisMonth?.expense || 0
+  const currentProfit = data.thisMonth?.profit || 0
+
+  const incomePercent = prevMonthIncome ? Math.round(((currentIncome - prevMonthIncome) / prevMonthIncome) * 100) : 0
+  const expensePercent = prevMonthExpense ? Math.round(((currentExpense - prevMonthExpense) / prevMonthExpense) * 100) : 0
+  const profitPercent = prevMonthProfit ? Math.round(((currentProfit - prevMonthProfit) / prevMonthProfit) * 100) : 0
+
+  return {
+    incomePercent: Math.abs(incomePercent),
+    incomeIcon: incomePercent >= 0 ? 'trending_up' : 'trending_down',
+    incomeColor: incomePercent >= 0 ? 'text-positive' : 'text-negative',
+    expensePercent: Math.abs(expensePercent),
+    expenseIcon: expensePercent >= 0 ? 'trending_up' : 'trending_down',
+    expenseColor: expensePercent >= 0 ? 'text-negative' : 'text-positive',
+    profitPercent: Math.abs(profitPercent),
+    profitIcon: profitPercent >= 0 ? 'trending_up' : 'trending_down',
+    profitColor: profitPercent >= 0 ? 'text-positive' : 'text-negative'
+  }
+})
+
+// Category breakdown
+const categoryBreakdown = computed(() => {
+  const data = dashboard.value
+  if (!data || !data.byCategory) return []
+  return data.byCategory
+})
 
 const onRefresh = async (done) => {
   await fetchData()
   done()
+}
+
+const onPeriodChange = async () => {
+  await fetchData()
 }
 
 const fetchData = async () => {
@@ -490,6 +729,29 @@ onMounted(() => {
 
 .summary-item:hover {
   background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Category Table */
+.category-table {
+  background: white;
+}
+
+.category-table :deep(.q-table__card) {
+  box-shadow: none;
+}
+
+.category-table :deep(th) {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #424242;
+}
+
+.category-table :deep(td) {
+  padding: 12px 8px;
+}
+
+.category-table :deep(tbody tr:hover) {
+  background-color: #fafafa;
 }
 
 /* Floating Action Button */

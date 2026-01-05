@@ -159,11 +159,15 @@ router.post('/', [
     .isFloat({ min: 0.01 })
     .withMessage('Amount harus lebih dari 0'),
   body('description')
+    .optional({ checkFalsy: true })
     .trim()
+    .bail()
     .isLength({ min: 1, max: 500 })
     .withMessage('Deskripsi harus 1-500 karakter'),
   body('category')
     .trim()
+    .notEmpty()
+    .withMessage('Kategori diperlukan')
     .isLength({ min: 1, max: 100 })
     .withMessage('Kategori harus 1-100 karakter'),
   body('transactionDate')
@@ -174,10 +178,26 @@ router.post('/', [
   try {
     const { type, amount, description, category, transactionDate } = req.body;
 
-    const transaction = await Transaction.create({
+    console.log('Create transaction request:', {
       type,
       amount,
-      description,
+      description: description ? description.substring(0, 50) : '(empty)',
+      category,
+      transactionDate,
+      userId: req.user?.id
+    });
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'User tidak teridentifikasi'
+      });
+    }
+
+    const transaction = await Transaction.create({
+      type,
+      amount: parseFloat(amount),
+      description: description && description.trim() ? description.trim() : null,
       category,
       transactionDate: transactionDate || new Date(),
       userId: req.user.id
@@ -199,10 +219,12 @@ router.post('/', [
       data: { transaction: newTransaction }
     });
   } catch (error) {
-    console.error('Create transaction error:', error);
+    console.error('Create transaction error:', error.message);
+    console.error('Stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Gagal membuat transaksi'
+      message: 'Gagal membuat transaksi',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -217,6 +239,7 @@ router.put('/:id', [
     .isFloat({ min: 0.01 })
     .withMessage('Amount harus lebih dari 0'),
   body('description')
+    .optional({ checkFalsy: true })
     .trim()
     .isLength({ min: 1, max: 500 })
     .withMessage('Deskripsi harus 1-500 karakter'),

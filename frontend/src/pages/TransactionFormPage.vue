@@ -92,7 +92,7 @@
             <div class="col-12 col-md-6">
               <q-input
                 v-model="form.description"
-                label="Deskripsi"
+                label="Deskripsi (Opsional)"
                 outlined
                 :rules="[
                   val => !val || val.length <= 500 || 'Deskripsi maksimal 500 karakter'
@@ -283,7 +283,7 @@ const updateAmount = (value) => {
 const onlyNumbers = (event) => {
   const key = event.key
   // Allow: numbers, decimal point, and control keys
-  if (!/[0-9.,]|[-]/.test(key) && 
+  if (!/[0-9.,]|[-]/.test(key) &&
       !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(key) &&
       !(event.ctrlKey && (key === 'a' || key === 'c' || key === 'v' || key === 'x'))) {
     event.preventDefault()
@@ -300,17 +300,21 @@ const loadTransaction = async () => {
     // Convert transaction date to proper format
     const transactionDateTime = new Date(transaction.transactionDate)
 
+    // Set type first
+    form.value.type = transaction.type
+
+    // Load categories based on type
+    await loadCategories()
+
+    // Then set other values including category
     form.value = {
       type: transaction.type,
       amount: parseFloat(transaction.amount),
-      description: transaction.description,
+      description: transaction.description || '',
       category: transaction.category,
       transactionDate: transactionDateTime.toISOString().split('T')[0],
       transactionTime: transactionDateTime.toTimeString().split(' ')[0].substring(0, 5)
     }
-
-    // Load categories after setting the type
-    await loadCategories()
   } catch (error) {
     // Simple alert instead of $q.notify
     alert(error)
@@ -327,7 +331,7 @@ const onSubmit = async () => {
     // Create a date string that represents the local datetime
     // Format: 2025-12-14T14:30:00 (local time, not UTC)
     const localDateTimeString = `${form.value.transactionDate}T${form.value.transactionTime}:00`
-    
+
     // Parse as local time (not UTC)
     // We'll create a Date object and then adjust for timezone
     const parts = localDateTimeString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
@@ -337,9 +341,9 @@ const onSubmit = async () => {
     const hours = parseInt(parts[4])
     const minutes = parseInt(parts[5])
     const seconds = parseInt(parts[6])
-    
+
     const transactionDateTime = new Date(year, month, day, hours, minutes, seconds)
-    
+
     // Convert to ISO but subtract the timezone offset to get back to local time in ISO format
     const tzOffset = transactionDateTime.getTimezoneOffset() * 60000
     const localISOString = new Date(transactionDateTime.getTime() - tzOffset).toISOString()
@@ -347,7 +351,7 @@ const onSubmit = async () => {
     const transactionData = {
       type: form.value.type,
       amount: form.value.amount,
-      description: form.value.description.trim(),
+      description: form.value.description ? form.value.description.trim() : '',
       category: form.value.category.trim(),
       transactionDate: localISOString
     }
@@ -372,8 +376,9 @@ const onSubmit = async () => {
     router.push('/app/transactions')
   } catch (error) {
     console.error('Submit error:', error)
-    // Simple alert instead of $q.notify
-    alert(typeof error === 'string' ? error : 'Gagal menyimpan transaksi')
+    // Show error message
+    const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Gagal menyimpan transaksi'
+    alert(errorMsg)
   } finally {
     isLoading.value = false
   }

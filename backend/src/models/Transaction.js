@@ -22,10 +22,9 @@ const Transaction = sequelize.define('Transaction', {
   },
   description: {
     type: DataTypes.TEXT,
-    allowNull: false,
+    allowNull: true,
     validate: {
       len: [1, 500],
-      notEmpty: true,
     },
   },
   category: {

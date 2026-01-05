@@ -37,6 +37,10 @@ router.get('/dashboard', authorize(1), async (req, res) => {
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
+    // Previous month dates
+    const startOfPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const endOfPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+
     console.log('Today string (for comparison):', todayString);
 
     // Today's summary - using date string comparison
@@ -60,7 +64,18 @@ router.get('/dashboard', authorize(1), async (req, res) => {
       }
     });
 
+    // Previous month's summary - for comparison
+    const prevMonthTransactions = await Transaction.findAll({
+      where: {
+        transactionDate: {
+          [Op.gte]: startOfPrevMonth,
+          [Op.lt]: new Date(endOfPrevMonth.getTime() + 86400000)
+        }
+      }
+    });
+
     console.log('Month transactions found:', monthTransactions.length);
+    console.log('Previous month transactions found:', prevMonthTransactions.length);
 
     // Calculate totals
     const todayIncome = todayTransactions
@@ -76,6 +91,15 @@ router.get('/dashboard', authorize(1), async (req, res) => {
       .reduce((sum, t) => sum + parseFloat(t.amount), 0);
     
     const monthExpense = monthTransactions
+      .filter(t => t.type === 'keluar')
+      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+    // Previous month totals
+    const prevMonthIncome = prevMonthTransactions
+      .filter(t => t.type === 'masuk')
+      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    
+    const prevMonthExpense = prevMonthTransactions
       .filter(t => t.type === 'keluar')
       .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
@@ -169,6 +193,12 @@ router.get('/dashboard', authorize(1), async (req, res) => {
           expense: monthExpense,
           profit: monthIncome - monthExpense,
           transactions: monthTransactions.length
+        },
+        prevMonth: {
+          income: prevMonthIncome,
+          expense: prevMonthExpense,
+          profit: prevMonthIncome - prevMonthExpense,
+          transactions: prevMonthTransactions.length
         },
         users: {
           total: totalUsers,
