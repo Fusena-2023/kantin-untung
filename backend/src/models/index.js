@@ -3,6 +3,7 @@ const User = require('./User');
 const Transaction = require('./Transaction');
 const Role = require('./Role');
 const Category = require('./Category');
+const PlateCount = require('./PlateCount');
 
 // Define associations
 User.hasMany(Transaction, {
@@ -26,10 +27,22 @@ User.belongsTo(Role, {
   as: 'userRole',
 });
 
+// PlateCount associations
+User.hasMany(PlateCount, {
+  foreignKey: 'userId',
+  as: 'plateCounts',
+});
+
+PlateCount.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user',
+});
+
 module.exports = {
   sequelize,
   User,
   Transaction,
   Role,
   Category,
+  PlateCount,
 };

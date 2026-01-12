@@ -45,6 +45,19 @@ class ReportService {
       throw error.response?.data?.message || 'Gagal mengambil laporan periode'
     }
   }
+
+  // Plate Count Reports
+  async getPlateCountSummary(startDate, endDate) {
+    try {
+      const params = {}
+      if (startDate) params.startDate = startDate
+      if (endDate) params.endDate = endDate
+      const response = await api.get('/plate-counts/summary', { params })
+      return response.data.data
+    } catch (error) {
+      throw error.response?.data?.message || 'Gagal mengambil laporan piring'
+    }
+  }
 }
 
 export default new ReportService()

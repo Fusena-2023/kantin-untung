@@ -79,6 +79,26 @@
           </q-item-section>
         </q-item>
 
+        <!-- Plate Count - For All Users -->
+        <q-item clickable v-ripple to="/app/plate-counts">
+          <q-item-section avatar>
+            <q-icon name="restaurant" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Input Piring</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <!-- Plate Count Report - For Pemilik Only -->
+        <q-item v-if="authStore.isPemilik" clickable v-ripple to="/app/plate-counts/report">
+          <q-item-section avatar>
+            <q-icon name="analytics" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Laporan Piring</q-item-label>
+          </q-item-section>
+        </q-item>
+
         <q-separator />
 
         <!-- Logout -->

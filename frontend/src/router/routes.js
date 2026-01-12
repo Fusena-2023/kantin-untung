@@ -61,6 +61,15 @@ const routes = [
         path: 'reports',
         component: () => import('pages/ReportsPage.vue'),
         meta: { roles: ['pemilik'] }
+      },
+      {
+        path: 'plate-counts',
+        component: () => import('pages/PlateCountPage.vue')
+      },
+      {
+        path: 'plate-counts/report',
+        component: () => import('pages/PlateCountReportPage.vue'),
+        meta: { roles: ['pemilik'] }
       }
     ]
   },

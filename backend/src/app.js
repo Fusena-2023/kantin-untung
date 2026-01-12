@@ -14,6 +14,7 @@ const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
 const reportRoutes = require('./routes/reports');
 const categoryRoutes = require('./routes/categories');
+const plateCountRoutes = require('./routes/plateCounts');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -55,6 +56,7 @@ app.use('/api/users', authenticate, userRoutes);
 app.use('/api/transactions', authenticate, transactionRoutes);
 app.use('/api/reports', authenticate, reportRoutes);
 app.use('/api/categories', authenticate, categoryRoutes);
+app.use('/api/plate-counts', authenticate, plateCountRoutes);
 
 // 404 handler
 app.use((req, res) => {
