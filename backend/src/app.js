@@ -24,9 +24,11 @@ const app = express();
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 500, // Increased from 100 to 500 requests per window
   message: 'Terlalu banyak request dari IP ini, coba lagi nanti.',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Middleware

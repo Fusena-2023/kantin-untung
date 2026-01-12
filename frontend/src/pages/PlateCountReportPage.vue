@@ -277,10 +277,10 @@ const customRange = ref({
 
 // Options
 const periodOptions = [
-  { label: 'Harian (Hari Ini)', value: 'daily' },
-  { label: 'Mingguan', value: 'weekly' },
-  { label: 'Bulanan', value: 'monthly' },
-  { label: 'Tahunan', value: 'yearly' },
+  { label: 'Hari Ini', value: 'daily' },
+  { label: 'Minggu', value: 'weekly' },
+  { label: 'Bulan', value: 'monthly' },
+  { label: 'Tahun', value: 'yearly' },
   { label: 'Custom', value: 'custom' }
 ]
 

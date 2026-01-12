@@ -67,12 +67,15 @@
     <!-- Summary Cards -->
     <div class="row q-col-gutter-sm q-col-gutter-md-md q-mb-md">
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="gradient-card gradient-green text-white">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Pemasukan {{ periodCardLabel }}</div>
-            <div class="text-h5 text-h4-md">{{ formatCurrency(currentPeriodData.income) }}</div>
+        <q-card flat bordered class="summary-card bg-green-1">
+          <q-card-section class="q-pa-md">
+            <div class="row items-center q-mb-sm">
+              <q-icon name="trending_up" size="24px" color="positive" class="q-mr-sm" />
+              <span class="text-grey-7">Pemasukan {{ periodCardLabel }}</span>
+            </div>
+            <div class="text-h5 text-positive text-weight-bold">{{ formatCurrency(currentPeriodData.income) }}</div>
             <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs" :class="profitTrend.incomeColor">
-              <q-icon :name="profitTrend.incomeIcon" />
+              <q-icon :name="profitTrend.incomeIcon" size="14px" />
               {{ profitTrend.incomePercent }}% dari bulan lalu
             </div>
           </q-card-section>
@@ -80,12 +83,15 @@
       </div>
 
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="gradient-card gradient-red text-white">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Pengeluaran {{ periodCardLabel }}</div>
-            <div class="text-h5 text-h4-md">{{ formatCurrency(currentPeriodData.expense) }}</div>
+        <q-card flat bordered class="summary-card bg-red-1">
+          <q-card-section class="q-pa-md">
+            <div class="row items-center q-mb-sm">
+              <q-icon name="trending_down" size="24px" color="negative" class="q-mr-sm" />
+              <span class="text-grey-7">Pengeluaran {{ periodCardLabel }}</span>
+            </div>
+            <div class="text-h5 text-negative text-weight-bold">{{ formatCurrency(currentPeriodData.expense) }}</div>
             <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs" :class="profitTrend.expenseColor">
-              <q-icon :name="profitTrend.expenseIcon" />
+              <q-icon :name="profitTrend.expenseIcon" size="14px" />
               {{ profitTrend.expensePercent }}% dari bulan lalu
             </div>
           </q-card-section>
@@ -93,12 +99,15 @@
       </div>
 
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="gradient-card gradient-blue text-white">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Keuntungan {{ periodCardLabel }}</div>
-            <div class="text-h5 text-h4-md">{{ formatCurrency(currentPeriodData.profit) }}</div>
+        <q-card flat bordered class="summary-card bg-blue-1">
+          <q-card-section class="q-pa-md">
+            <div class="row items-center q-mb-sm">
+              <q-icon name="account_balance_wallet" size="24px" color="primary" class="q-mr-sm" />
+              <span class="text-grey-7">Keuntungan {{ periodCardLabel }}</span>
+            </div>
+            <div class="text-h5 text-primary text-weight-bold">{{ formatCurrency(currentPeriodData.profit) }}</div>
             <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs" :class="profitTrend.profitColor">
-              <q-icon :name="profitTrend.profitIcon" />
+              <q-icon :name="profitTrend.profitIcon" size="14px" />
               {{ profitTrend.profitPercent }}% dari bulan lalu
             </div>
           </q-card-section>
@@ -106,13 +115,15 @@
       </div>
 
       <div v-if="authStore.user?.role === 'pemilik'" class="col-12 col-sm-6 col-md-3">
-        <q-card class="gradient-card gradient-orange text-white">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Total Transaksi</div>
-            <div class="text-h5 text-h4-md">{{ currentPeriodData.transactions }}</div>
-            <div class="text-caption q-mt-xs">
-              <q-icon name="receipt" size="14px" class="q-mr-xs" />
-              {{ currentPeriodData.transactions }} transaksi
+        <q-card flat bordered class="summary-card bg-orange-1">
+          <q-card-section class="q-pa-md">
+            <div class="row items-center q-mb-sm">
+              <q-icon name="receipt" size="24px" color="orange" class="q-mr-sm" />
+              <span class="text-grey-7">Total Transaksi</span>
+            </div>
+            <div class="text-h5 text-orange-9 text-weight-bold">{{ currentPeriodData.transactions }}</div>
+            <div class="text-caption q-mt-xs text-grey-6">
+              {{ currentPeriodData.transactions }} transaksi tercatat
             </div>
           </q-card-section>
         </q-card>
@@ -120,10 +131,10 @@
     </div>
 
     <!-- Grafik Pemasukan vs Pengeluaran -->
-    <q-card class="modern-card q-mb-md">
-      <q-card-section class="q-pa-sm q-pa-md-md card-header gradient-header-success">
-        <div class="text-subtitle1 text-h6-md text-weight-medium text-white">
-          <q-icon name="show_chart" class="q-mr-sm" />
+    <q-card flat bordered class="q-mb-md">
+      <q-card-section class="q-pa-md bg-grey-1">
+        <div class="text-subtitle1 text-weight-medium">
+          <q-icon name="show_chart" class="q-mr-sm" color="primary" />
           Tren Keuangan 7 Hari Terakhir
         </div>
       </q-card-section>
@@ -143,10 +154,10 @@
       <!-- Main Content (Full width on mobile, 8 cols on desktop) -->
       <div class="col-12 col-md-8">
         <!-- Breakdown per Kategori -->
-        <q-card class="modern-card q-mb-md">
-          <q-card-section class="q-pa-sm q-pa-md-md card-header gradient-header-alt">
-            <div class="text-subtitle1 text-h6-md text-weight-medium text-white">
-              <q-icon name="category" class="q-mr-sm" />
+        <q-card flat bordered class="q-mb-md">
+          <q-card-section class="q-pa-md bg-grey-1">
+            <div class="text-subtitle1 text-weight-medium">
+              <q-icon name="category" class="q-mr-sm" color="primary" />
               Breakdown per Kategori
             </div>
           </q-card-section>
@@ -180,10 +191,10 @@
         </q-card>
 
         <!-- Transaksi Terbaru -->
-        <q-card class="modern-card q-mb-md">
-          <q-card-section class="q-pa-sm q-pa-md-md card-header gradient-header">
-            <div class="text-subtitle1 text-h6-md text-weight-medium text-white">
-              <q-icon name="history" class="q-mr-sm" />
+        <q-card flat bordered class="q-mb-md">
+          <q-card-section class="q-pa-md bg-grey-1">
+            <div class="text-subtitle1 text-weight-medium">
+              <q-icon name="history" class="q-mr-sm" color="primary" />
               Transaksi Terbaru
             </div>
           </q-card-section>
@@ -240,10 +251,10 @@
       <!-- Sidebar Content (Full width on mobile, 4 cols on desktop) -->
       <div class="col-12 col-md-4">
         <!-- Ringkasan Bulanan -->
-        <q-card class="modern-card q-mb-md">
-          <q-card-section class="q-pa-sm q-pa-md-md card-header gradient-header-alt">
-            <div class="text-subtitle1 text-h6-md text-weight-medium text-white">
-              <q-icon name="calendar_month" class="q-mr-sm" />
+        <q-card flat bordered class="q-mb-md">
+          <q-card-section class="q-pa-md bg-grey-1">
+            <div class="text-subtitle1 text-weight-medium">
+              <q-icon name="calendar_month" class="q-mr-sm" color="primary" />
               Ringkasan Bulanan
             </div>
           </q-card-section>
@@ -634,73 +645,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.gradient-card {
-  border-radius: 12px;
-  overflow: hidden;
+/* Summary Cards */
+.summary-card {
+  border-radius: 8px;
   transition: transform 0.2s, box-shadow 0.2s;
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
 }
 
-.gradient-card .q-card__section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.gradient-card:hover {
+.summary-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-}
-
-.gradient-green {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-}
-
-.gradient-red {
-  background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
-}
-
-.gradient-blue {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-
-.gradient-orange {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-}
-
-/* Modern Card Styling */
-.modern-card {
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.modern-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.card-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.gradient-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.gradient-header-alt {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-.gradient-header-accent {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-
-.gradient-header-success {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Transaction List */

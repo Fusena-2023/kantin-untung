@@ -13,15 +13,16 @@
         <div class="row items-center justify-between q-mb-md">
           <div class="text-h6">
             <q-icon name="analytics" class="q-mr-sm" />
-            Ringkasan Periode
+            Ringkasan
           </div>
-          <div class="row q-gutter-sm items-center">
+          <div class="row q-gutter-sm items-center" v-if="isPemilik">
             <q-btn-toggle
               v-model="summaryPeriod"
               toggle-color="primary"
               :options="periodOptions"
               unelevated
               rounded
+              dense
               @update:model-value="fetchPeriodSummary"
             />
             <template v-if="summaryPeriod === 'custom'">
@@ -51,15 +52,15 @@
           </div>
         </div>
 
-        <!-- Period Label -->
-        <div class="text-subtitle1 text-grey-7 q-mb-md">
+        <!-- Period Label - Only for Pemilik -->
+        <div class="text-subtitle1 text-grey-7 q-mb-md" v-if="isPemilik">
           <q-icon name="date_range" class="q-mr-xs" />
           {{ periodLabel }}
         </div>
 
-        <!-- Summary Cards -->
-        <div class="row q-col-gutter-md" v-if="periodSummary">
-          <div class="col-12 col-sm-6" :class="isPemilik ? 'col-md-2' : 'col-md-6'">
+        <!-- Summary Cards - Pemilik -->
+        <div class="row q-col-gutter-md" v-if="periodSummary && isPemilik">
+          <div class="col-12 col-sm-6 col-md-2">
             <q-card flat bordered class="bg-blue-1">
               <q-card-section class="text-center">
                 <div class="text-h4 text-primary">{{ periodSummary.totalPlates }}</div>
@@ -67,45 +68,63 @@
               </q-card-section>
             </q-card>
           </div>
-          <template v-if="isPemilik">
-            <div class="col-12 col-sm-6 col-md-2">
-              <q-card flat bordered class="bg-cyan-1">
-                <q-card-section class="text-center">
-                  <div class="text-h6 text-cyan-9">{{ formatCurrency(periodSummary.totalTransfer) }}</div>
-                  <div class="text-grey-7">Transfer Pabrik</div>
-                </q-card-section>
-              </q-card>
-            </div>
-            <div class="col-12 col-sm-6 col-md-2">
-              <q-card flat bordered class="bg-green-1">
-                <q-card-section class="text-center">
-                  <div class="text-h6 text-positive">{{ formatCurrency(periodSummary.netIncome) }}</div>
-                  <div class="text-grey-7">Penghasilan Bersih</div>
-                </q-card-section>
-              </q-card>
-            </div>
-            <div class="col-12 col-sm-6 col-md-2">
-              <q-card flat bordered class="bg-orange-1">
-                <q-card-section class="text-center">
-                  <div class="text-h6 text-warning">{{ formatCurrency(periodSummary.netReturn) }}</div>
-                  <div class="text-grey-7">Dikembalikan</div>
-                </q-card-section>
-              </q-card>
-            </div>
-            <div class="col-12 col-sm-6 col-md-2">
-              <q-card flat bordered class="bg-red-1">
-                <q-card-section class="text-center">
-                  <div class="text-h6 text-negative">{{ formatCurrency(periodSummary.totalTax) }}</div>
-                  <div class="text-grey-7">Total Pajak</div>
-                </q-card-section>
-              </q-card>
-            </div>
-          </template>
-          <div class="col-12 col-sm-6" :class="isPemilik ? 'col-md-2' : 'col-md-6'">
+          <div class="col-12 col-sm-6 col-md-2">
+            <q-card flat bordered class="bg-cyan-1">
+              <q-card-section class="text-center">
+                <div class="text-h6 text-cyan-9">{{ formatCurrency(periodSummary.totalTransfer) }}</div>
+                <div class="text-grey-7">Transfer Pabrik</div>
+              </q-card-section>
+            </q-card>
+          </div>
+          <div class="col-12 col-sm-6 col-md-2">
+            <q-card flat bordered class="bg-green-1">
+              <q-card-section class="text-center">
+                <div class="text-h6 text-positive">{{ formatCurrency(periodSummary.netIncome) }}</div>
+                <div class="text-grey-7">Penghasilan Bersih</div>
+              </q-card-section>
+            </q-card>
+          </div>
+          <div class="col-12 col-sm-6 col-md-2">
+            <q-card flat bordered class="bg-orange-1">
+              <q-card-section class="text-center">
+                <div class="text-h6 text-warning">{{ formatCurrency(periodSummary.netReturn) }}</div>
+                <div class="text-grey-7">Dikembalikan</div>
+              </q-card-section>
+            </q-card>
+          </div>
+          <div class="col-12 col-sm-6 col-md-2">
+            <q-card flat bordered class="bg-red-1">
+              <q-card-section class="text-center">
+                <div class="text-h6 text-negative">{{ formatCurrency(periodSummary.totalTax) }}</div>
+                <div class="text-grey-7">Total Pajak</div>
+              </q-card-section>
+            </q-card>
+          </div>
+          <div class="col-12 col-sm-6 col-md-2">
             <q-card flat bordered class="bg-purple-1">
               <q-card-section class="text-center">
                 <div class="text-h6 text-purple-9">{{ periodSummary.recordCount }}</div>
-                <div class="text-grey-7">Jumlah Record</div>
+                <div class="text-grey-7">Jumlah Data</div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+
+        <!-- Summary Cards - Pegawai (Simplified) -->
+        <div class="row q-col-gutter-md" v-if="periodSummary && !isPemilik">
+          <div class="col-6">
+            <q-card flat bordered class="bg-blue-1">
+              <q-card-section class="text-center">
+                <div class="text-h4 text-primary">{{ periodSummary.totalPlates }}</div>
+                <div class="text-grey-7">Total Piring</div>
+              </q-card-section>
+            </q-card>
+          </div>
+          <div class="col-6">
+            <q-card flat bordered class="bg-purple-1">
+              <q-card-section class="text-center">
+                <div class="text-h4 text-purple-9">{{ periodSummary.recordCount }}</div>
+                <div class="text-grey-7">Jumlah Data</div>
               </q-card-section>
             </q-card>
           </div>
@@ -272,30 +291,33 @@
 
     <!-- Input/Edit Dialog -->
     <q-dialog v-model="showDialog" persistent>
-      <q-card style="width: 500px; max-width: 90vw">
-        <q-card-section class="row items-center">
-          <div class="text-h6">
-            {{ isEditing ? 'Edit Data Piring' : 'Input Jumlah Piring' }}
+      <q-card style="width: 420px; max-width: 95vw">
+        <q-card-section class="q-pb-none">
+          <div class="row items-center">
+            <q-icon name="restaurant" size="sm" color="primary" class="q-mr-sm" />
+            <span class="text-subtitle1 text-weight-medium">
+              {{ isEditing ? 'Edit Data Piring' : 'Input Jumlah Piring' }}
+            </span>
+            <q-space />
+            <q-btn icon="close" flat round dense size="sm" v-close-popup />
           </div>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-separator />
-
-        <q-card-section>
-          <q-form @submit.prevent="saveData" class="q-gutter-md">
-            <div class="row q-col-gutter-md">
-              <div class="col-12 col-sm-6">
+        <q-card-section class="q-pt-md q-pb-sm">
+          <q-form @submit.prevent="saveData">
+            <!-- Row 1: Tanggal & Shift -->
+            <div class="row q-col-gutter-sm q-mb-sm">
+              <div class="col-7">
                 <q-input
                   v-model="form.date"
                   type="date"
                   label="Tanggal *"
                   outlined
+                  dense
                   :rules="[val => !!val || 'Tanggal wajib diisi']"
                 />
               </div>
-              <div class="col-12 col-sm-6">
+              <div class="col-5">
                 <q-select
                   v-model="form.shift"
                   :options="[
@@ -304,6 +326,7 @@
                   ]"
                   label="Shift *"
                   outlined
+                  dense
                   emit-value
                   map-options
                   :rules="[val => !!val || 'Shift wajib dipilih']"
@@ -311,139 +334,151 @@
               </div>
             </div>
 
+            <!-- Row 2: Jumlah Piring -->
             <q-input
               v-model.number="form.plateCount"
               type="number"
               label="Jumlah Piring *"
-              placeholder="Masukkan jumlah piring"
               outlined
+              dense
               min="0"
-              style="min-width: 200px;"
-              input-class="text-right"
+              input-class="text-right text-weight-medium"
+              class="q-mb-sm"
               :rules="[
                 val => (val !== null && val !== '') || 'Jumlah piring wajib diisi',
                 val => val >= 0 || 'Jumlah tidak boleh negatif'
               ]"
             >
               <template v-slot:append>
-                <span class="text-grey-7" style="min-width: 40px;">piring</span>
+                <span class="text-grey-6 text-body2">piring</span>
               </template>
             </q-input>
 
-            <!-- Price Configuration (Collapsible) - Only for Pemilik -->
-            <q-expansion-item
-              v-if="isPemilik"
-              icon="settings"
-              label="Pengaturan Harga"
-              caption="Klik untuk mengubah harga per piring"
-            >
-              <q-card>
-                <q-card-section class="q-gutter-sm">
-                  <q-input
-                    v-model.number="form.pricePerPlate"
-                    type="number"
-                    label="Harga per Piring (dari Pabrik)"
-                    outlined
-                    dense
-                    prefix="Rp"
-                  />
-                  <q-input
-                    v-model.number="form.incomePerPlate"
-                    type="number"
-                    label="Penghasilan per Piring"
-                    outlined
-                    dense
-                    prefix="Rp"
-                  />
-                  <q-input
-                    v-model.number="form.returnPerPlate"
-                    type="number"
-                    label="Dikembalikan per Piring"
-                    outlined
-                    dense
-                    prefix="Rp"
-                  />
-                  <q-input
-                    v-model.number="form.taxPercentage"
-                    type="number"
-                    label="Persentase Pajak"
-                    outlined
-                    dense
-                    suffix="%"
-                    step="0.1"
-                  />
-                </q-card-section>
-              </q-card>
-            </q-expansion-item>
-
+            <!-- Row 3: Catatan -->
             <q-input
               v-model="form.notes"
               type="textarea"
               label="Catatan (opsional)"
               outlined
+              dense
               rows="2"
+              autogrow
+              class="q-mb-sm"
             />
+
+            <!-- Price Configuration (Collapsible) - Only for Pemilik -->
+            <q-expansion-item
+              v-if="isPemilik"
+              dense
+              dense-toggle
+              icon="tune"
+              label="Pengaturan Harga"
+              header-class="text-grey-8 text-caption"
+              class="bg-grey-1 rounded-borders q-mb-sm"
+            >
+              <div class="q-pa-sm q-gutter-xs">
+                <div class="row q-col-gutter-xs">
+                  <div class="col-6">
+                    <q-input
+                      v-model.number="form.pricePerPlate"
+                      type="number"
+                      label="Harga/Piring"
+                      outlined
+                      dense
+                      prefix="Rp"
+                    />
+                  </div>
+                  <div class="col-6">
+                    <q-input
+                      v-model.number="form.incomePerPlate"
+                      type="number"
+                      label="Penghasilan/Piring"
+                      outlined
+                      dense
+                      prefix="Rp"
+                    />
+                  </div>
+                </div>
+                <div class="row q-col-gutter-xs">
+                  <div class="col-6">
+                    <q-input
+                      v-model.number="form.returnPerPlate"
+                      type="number"
+                      label="Dikembalikan/Piring"
+                      outlined
+                      dense
+                      prefix="Rp"
+                    />
+                  </div>
+                  <div class="col-6">
+                    <q-input
+                      v-model.number="form.taxPercentage"
+                      type="number"
+                      label="Pajak"
+                      outlined
+                      dense
+                      suffix="%"
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </q-expansion-item>
           </q-form>
         </q-card-section>
 
         <!-- Preview Calculation - Only for Pemilik -->
-        <q-card-section v-if="isPemilik" class="bg-grey-2">
-          <div class="text-subtitle2 q-mb-sm">Pratinjau Perhitungan:</div>
-          <div class="row q-col-gutter-sm">
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-7">Transfer dari Pabrik:</div>
+        <q-card-section v-if="isPemilik" class="bg-blue-1 q-py-sm">
+          <div class="text-caption text-weight-medium text-grey-8 q-mb-xs">
+            <q-icon name="calculate" size="xs" class="q-mr-xs" />
+            Pratinjau Perhitungan
+          </div>
+          <div class="row q-col-gutter-xs text-caption">
+            <div class="col-6">
+              <div class="text-grey-7">Transfer Pabrik</div>
               <div class="text-weight-medium">{{ formatCurrency(preview.totalTransfer) }}</div>
             </div>
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-7">Total Pajak ({{ form.taxPercentage }}%):</div>
-              <div class="text-weight-medium text-negative">{{ formatCurrency(preview.totalTax) }}</div>
+            <div class="col-6">
+              <div class="text-grey-7">Pajak ({{ form.taxPercentage }}%)</div>
+              <div class="text-weight-medium text-negative">-{{ formatCurrency(preview.totalTax) }}</div>
             </div>
-            <div class="col-12">
-              <q-separator class="q-my-sm" />
+          </div>
+          <q-separator class="q-my-xs" />
+          <div class="row q-col-gutter-xs text-caption">
+            <div class="col-6">
+              <div class="text-grey-7">Penghasilan Bersih</div>
+              <div class="text-weight-bold text-positive">{{ formatCurrency(preview.netIncome) }}</div>
             </div>
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-7">Penghasilan Kotor:</div>
-              <div>{{ formatCurrency(preview.grossIncome) }}</div>
-              <div class="text-caption text-negative">Pajak: -{{ formatCurrency(preview.incomeTax) }}</div>
-              <div class="text-weight-bold text-positive">Bersih: {{ formatCurrency(preview.netIncome) }}</div>
+            <div class="col-6">
+              <div class="text-grey-7">Pengembalian Bersih</div>
+              <div class="text-weight-bold text-orange-8">{{ formatCurrency(preview.netReturn) }}</div>
             </div>
-            <div class="col-12 col-sm-6">
-              <div class="text-caption text-grey-7">Pengembalian Kotor:</div>
-              <div>{{ formatCurrency(preview.grossReturn) }}</div>
-              <div class="text-caption text-negative">Pajak: -{{ formatCurrency(preview.returnTax) }}</div>
-              <div class="text-weight-bold text-warning">Bersih: {{ formatCurrency(preview.netReturn) }}</div>
+          </div>
+          <q-separator class="q-my-xs" />
+          <div class="row items-center justify-between">
+            <div>
+              <span class="text-caption text-grey-7">Total Bersih:</span>
+              <span class="text-weight-bold text-primary q-ml-xs">{{ formatCurrency(preview.totalAfterTax) }}</span>
             </div>
-            <div class="col-12">
-              <q-separator class="q-my-sm" />
-              <div class="row justify-between">
-                <div>
-                  <span class="text-caption text-grey-7">Total Setelah Pajak:</span>
-                  <span class="text-weight-bold q-ml-sm">{{ formatCurrency(preview.totalAfterTax) }}</span>
-                </div>
-                <div>
-                  <q-icon
-                    :name="preview.verification ? 'check_circle' : 'error'"
-                    :color="preview.verification ? 'positive' : 'negative'"
-                    size="sm"
-                  />
-                  <span class="text-caption q-ml-xs">
-                    {{ preview.verification ? 'Perhitungan valid' : 'Ada selisih' }}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <q-icon
+              :name="preview.verification ? 'check_circle' : 'error'"
+              :color="preview.verification ? 'positive' : 'negative'"
+              size="xs"
+            />
           </div>
         </q-card-section>
 
-        <q-separator />
-
-        <q-card-actions align="right" class="q-pa-md">
-          <q-btn flat label="Batal" v-close-popup />
+        <q-card-actions class="q-px-md q-py-sm bg-grey-2">
+          <q-space />
+          <q-btn flat dense label="Batal" color="grey-7" v-close-popup class="q-px-md" />
           <q-btn
+            unelevated
+            dense
             color="primary"
-            :label="isEditing ? 'Simpan Perubahan' : 'Simpan'"
+            :label="isEditing ? 'Simpan' : 'Simpan'"
             :loading="saving"
             @click="saveData"
+            class="q-px-lg"
           />
         </q-card-actions>
       </q-card>
@@ -476,12 +511,13 @@ const summaryPeriod = ref('weekly')
 const customStartDate = ref('')
 const customEndDate = ref('')
 const periodOptions = [
-  { label: 'Harian', value: 'daily' },
-  { label: 'Mingguan', value: 'weekly' },
-  { label: 'Bulanan', value: 'monthly' },
-  { label: 'Tahunan', value: 'yearly' },
+  { label: 'Hari Ini', value: 'daily' },
+  { label: 'Minggu', value: 'weekly' },
+  { label: 'Bulan', value: 'monthly' },
+  { label: 'Tahun', value: 'yearly' },
   { label: 'Custom', value: 'custom' }
 ]
+
 
 // Filters
 const filterDate = ref('')

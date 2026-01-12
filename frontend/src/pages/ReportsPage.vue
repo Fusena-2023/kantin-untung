@@ -29,20 +29,25 @@
       </div>
 
     <!-- Filter Section -->
-    <q-card class="modern-card q-mb-md">
-      <q-card-section class="q-pa-sm q-pa-md-md">
-        <div class="text-subtitle1 text-h6-md q-mb-sm q-mb-md-md text-weight-medium">Filter Laporan</div>
+    <q-card flat bordered class="q-mb-md">
+      <q-card-section class="q-pa-md bg-grey-1">
+        <div class="text-subtitle1 text-weight-medium">
+          <q-icon name="filter_list" class="q-mr-sm" color="primary" />
+          Filter Laporan
+        </div>
+      </q-card-section>
+      <q-card-section class="q-pa-md">
         <div class="row q-col-gutter-sm q-col-gutter-md-md">
           <q-select
             v-model="reportType"
-            label="Tipe Laporan"
+            label="Tipe Periode"
             outlined
             dense
             :options="reportTypeOptions"
             emit-value
             map-options
-            class="col-12 col-md-4"
-            @update:model-value="fetchReport"
+            class="col-12 col-md-3"
+            @update:model-value="onReportTypeChange"
           />
 
           <q-input
@@ -52,8 +57,9 @@
             dense
             readonly
             class="col-12 col-md-3"
-            v-show="reportType === 'range'"
+            v-show="reportType === 'custom'"
             hint="Format: DD/MM/YYYY"
+          >
           >
             <template v-slot:prepend>
               <q-icon name="event" class="cursor-pointer">
@@ -75,7 +81,7 @@
             dense
             readonly
             class="col-12 col-md-3"
-            v-show="reportType === 'range'"
+            v-show="reportType === 'custom'"
             hint="Format: DD/MM/YYYY"
           >
             <template v-slot:prepend>
@@ -90,28 +96,6 @@
               </q-icon>
             </template>
           </q-input>
-
-          <q-input
-            v-model="monthFilter.year"
-            label="Tahun"
-            type="number"
-            outlined
-            dense
-            class="col-12 col-md-3"
-            v-show="reportType === 'monthly'"
-          />
-
-          <q-select
-            v-model="monthFilter.month"
-            label="Bulan"
-            outlined
-            dense
-            :options="monthOptions"
-            emit-value
-            map-options
-            class="col-12 col-md-3"
-            v-show="reportType === 'monthly'"
-          />
 
           <div class="col-12 col-md-2">
             <q-btn
@@ -131,37 +115,49 @@
     <!-- Summary Cards -->
     <div class="row q-col-gutter-sm q-col-gutter-md-md q-mb-md" v-if="currentReport">
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="gradient-card gradient-green text-white">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Total Pemasukan</div>
-            <div class="text-h5 text-h4-md">{{ formatCurrency(currentReport.summary?.totalIncome || 0) }}</div>
+        <q-card flat bordered class="summary-card bg-green-1">
+          <q-card-section class="q-pa-md">
+            <div class="row items-center q-mb-sm">
+              <q-icon name="trending_up" size="24px" color="positive" class="q-mr-sm" />
+              <span class="text-grey-7">Total Pemasukan</span>
+            </div>
+            <div class="text-h5 text-positive text-weight-bold">{{ formatCurrency(currentReport.summary?.totalIncome || 0) }}</div>
           </q-card-section>
         </q-card>
       </div>
 
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="gradient-card gradient-red text-white">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Total Pengeluaran</div>
-            <div class="text-h5 text-h4-md">{{ formatCurrency(currentReport.summary?.totalExpense || 0) }}</div>
+        <q-card flat bordered class="summary-card bg-red-1">
+          <q-card-section class="q-pa-md">
+            <div class="row items-center q-mb-sm">
+              <q-icon name="trending_down" size="24px" color="negative" class="q-mr-sm" />
+              <span class="text-grey-7">Total Pengeluaran</span>
+            </div>
+            <div class="text-h5 text-negative text-weight-bold">{{ formatCurrency(currentReport.summary?.totalExpense || 0) }}</div>
           </q-card-section>
         </q-card>
       </div>
 
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="gradient-card gradient-blue text-white">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Keuntungan</div>
-            <div class="text-h5 text-h4-md">{{ formatCurrency(currentReport.summary?.profit || 0) }}</div>
+        <q-card flat bordered class="summary-card bg-blue-1">
+          <q-card-section class="q-pa-md">
+            <div class="row items-center q-mb-sm">
+              <q-icon name="account_balance_wallet" size="24px" color="primary" class="q-mr-sm" />
+              <span class="text-grey-7">Keuntungan</span>
+            </div>
+            <div class="text-h5 text-primary text-weight-bold">{{ formatCurrency(currentReport.summary?.profit || 0) }}</div>
           </q-card-section>
         </q-card>
       </div>
 
       <div class="col-12 col-sm-6 col-md-3">
-        <q-card class="gradient-card gradient-orange text-white">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle2 text-h6-md">Total Transaksi</div>
-            <div class="text-h5 text-h4-md">{{ currentReport.summary?.totalTransactions || 0 }}</div>
+        <q-card flat bordered class="summary-card bg-orange-1">
+          <q-card-section class="q-pa-md">
+            <div class="row items-center q-mb-sm">
+              <q-icon name="receipt" size="24px" color="orange" class="q-mr-sm" />
+              <span class="text-grey-7">Total Transaksi</span>
+            </div>
+            <div class="text-h5 text-orange-9 text-weight-bold">{{ currentReport.summary?.totalTransactions || 0 }}</div>
           </q-card-section>
         </q-card>
       </div>
@@ -171,9 +167,14 @@
     <div class="row q-col-gutter-sm q-col-gutter-md-md q-mb-md" v-if="currentReport">
       <!-- Category Breakdown -->
       <div class="col-12 col-md-6">
-        <q-card class="modern-card">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle1 text-h6-md q-mb-md text-weight-medium">Breakdown per Kategori</div>
+        <q-card flat bordered>
+          <q-card-section class="q-pa-md bg-grey-1">
+            <div class="text-subtitle1 text-weight-medium">
+              <q-icon name="category" class="q-mr-sm" color="primary" />
+              Breakdown per Kategori
+            </div>
+          </q-card-section>
+          <q-card-section class="q-pa-md">
             <q-list v-if="currentReport.byCategory?.length" separator>
               <q-item v-for="category in currentReport.byCategory" :key="category.category" class="q-pa-sm">
                 <q-item-section>
@@ -198,11 +199,16 @@
         </q-card>
       </div>
 
-      <!-- Daily Data (for monthly report) -->
-      <div class="col-12 col-md-6" v-if="reportType === 'monthly' && currentReport.dailyData">
-        <q-card class="modern-card">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="text-subtitle1 text-h6-md q-mb-md text-weight-medium">Data Harian</div>
+      <!-- Daily Data (jika tersedia) -->
+      <div class="col-12 col-md-6" v-if="currentReport && currentReport.dailyData && currentReport.dailyData.length">
+        <q-card flat bordered>
+          <q-card-section class="q-pa-md bg-grey-1">
+            <div class="text-subtitle1 text-weight-medium">
+              <q-icon name="calendar_today" class="q-mr-sm" color="primary" />
+              Data Per Hari
+            </div>
+          </q-card-section>
+          <q-card-section class="q-pa-md">
             <q-scroll-area style="height: 300px">
               <q-list separator>
                 <q-item v-for="day in currentReport.dailyData.slice(0, 10)" :key="day.date" class="q-pa-sm">
@@ -224,9 +230,14 @@
     </div>
 
     <!-- Transactions Table -->
-    <q-card class="modern-card" v-if="currentReport?.transactions">
-      <q-card-section class="q-pa-sm q-pa-md-md">
-        <div class="text-subtitle1 text-h6-md q-mb-md text-weight-medium">Detail Transaksi</div>
+    <q-card flat bordered v-if="currentReport?.transactions">
+      <q-card-section class="q-pa-md bg-grey-1">
+        <div class="text-subtitle1 text-weight-medium">
+          <q-icon name="list_alt" class="q-mr-sm" color="primary" />
+          Detail Transaksi
+        </div>
+      </q-card-section>
+      <q-card-section class="q-pa-md">
 
         <!-- Desktop Table View -->
         <q-table
@@ -319,7 +330,7 @@
     </q-card>
 
     <!-- No Data State -->
-    <q-card class="modern-card" v-if="!currentReport && !reportStore.isLoading">
+    <q-card flat bordered v-if="!currentReport && !reportStore.isLoading">
       <q-card-section class="text-center q-py-xl">
         <q-icon name="assessment" size="64px" color="grey-5" class="q-mb-md" />
         <div class="text-h6 text-grey-7">Pilih tipe laporan untuk melihat data</div>
@@ -354,7 +365,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useQuasar } from 'quasar'
 import { useReportStore } from 'stores/report-store'
 import { formatCurrency, formatDate, formatDateOnly, dateToIndonesian } from 'src/utils/format'
@@ -375,30 +386,12 @@ const dateRange = reactive({
 const displayDateFrom = computed(() => dateToIndonesian(dateRange.from))
 const displayDateTo = computed(() => dateToIndonesian(dateRange.to))
 
-const monthFilter = reactive({
-  year: new Date().getFullYear(),
-  month: new Date().getMonth() + 1
-})
-
 const reportTypeOptions = [
-  { label: 'Laporan Harian', value: 'daily' },
-  { label: 'Laporan Bulanan', value: 'monthly' },
-  { label: 'Periode Kustom', value: 'range' }
-]
-
-const monthOptions = [
-  { label: 'Januari', value: 1 },
-  { label: 'Februari', value: 2 },
-  { label: 'Maret', value: 3 },
-  { label: 'April', value: 4 },
-  { label: 'Mei', value: 5 },
-  { label: 'Juni', value: 6 },
-  { label: 'Juli', value: 7 },
-  { label: 'Agustus', value: 8 },
-  { label: 'September', value: 9 },
-  { label: 'Oktober', value: 10 },
-  { label: 'November', value: 11 },
-  { label: 'Desember', value: 12 }
+  { label: 'Hari Ini', value: 'today' },
+  { label: 'Minggu', value: 'weekly' },
+  { label: 'Bulan', value: 'monthly' },
+  { label: 'Tahun', value: 'yearly' },
+  { label: 'Custom', value: 'custom' }
 ]
 
 const transactionColumns = [
@@ -443,11 +436,12 @@ const transactionColumns = [
 
 const currentReport = computed(() => {
   switch (reportType.value) {
-    case 'daily':
+    case 'today':
       return reportStore.dailyReport
+    case 'weekly':
     case 'monthly':
-      return reportStore.monthlyReport
-    case 'range':
+    case 'yearly':
+    case 'custom':
       return reportStore.rangeReport
     default:
       return null
@@ -459,18 +453,61 @@ const onRefresh = async (done) => {
   done()
 }
 
+// Handler untuk perubahan tipe periode
+const onReportTypeChange = () => {
+  // Set tanggal otomatis berdasarkan tipe periode
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+
+  switch (reportType.value) {
+    case 'today':
+      dateRange.from = todayStr
+      dateRange.to = todayStr
+      break
+    case 'weekly': {
+      const weekAgo = new Date(today)
+      weekAgo.setDate(weekAgo.getDate() - 7)
+      dateRange.from = weekAgo.toISOString().split('T')[0]
+      dateRange.to = todayStr
+      break
+    }
+    case 'monthly': {
+      const monthAgo = new Date(today)
+      monthAgo.setMonth(monthAgo.getMonth() - 1)
+      dateRange.from = monthAgo.toISOString().split('T')[0]
+      dateRange.to = todayStr
+      break
+    }
+    case 'yearly': {
+      const yearAgo = new Date(today)
+      yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+      dateRange.from = yearAgo.toISOString().split('T')[0]
+      dateRange.to = todayStr
+      break
+    }
+    case 'custom':
+      // Biarkan user pilih sendiri
+      break
+  }
+
+  // Auto fetch untuk tipe selain custom
+  if (reportType.value !== 'custom') {
+    fetchReport()
+  }
+}
+
 const fetchReport = async () => {
   if (!reportType.value) return
 
   try {
     switch (reportType.value) {
-      case 'daily':
+      case 'today':
         await reportStore.fetchDailyReport()
         break
+      case 'weekly':
       case 'monthly':
-        await reportStore.fetchMonthlyReport(monthFilter.year, monthFilter.month)
-        break
-      case 'range':
+      case 'yearly':
+      case 'custom':
         if (dateRange.from && dateRange.to) {
           await reportStore.fetchRangeReport(dateRange.from, dateRange.to)
         } else {
@@ -512,13 +549,22 @@ const exportReport = () => {
     // Report info
     doc.setFontSize(10)
     let reportTitle = ''
-    if (reportType.value === 'daily') {
-      reportTitle = 'Laporan Harian - ' + formatDateOnly(new Date())
-    } else if (reportType.value === 'monthly') {
-      const monthName = monthOptions.find(m => m.value === monthFilter.month)?.label
-      reportTitle = `Laporan Bulanan - ${monthName} ${monthFilter.year}`
-    } else if (reportType.value === 'range') {
-      reportTitle = `Laporan Periode - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+    switch (reportType.value) {
+      case 'today':
+        reportTitle = 'Laporan Hari Ini - ' + formatDateOnly(new Date())
+        break
+      case 'weekly':
+        reportTitle = `Laporan Satu Minggu - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+        break
+      case 'monthly':
+        reportTitle = `Laporan Satu Bulan - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+        break
+      case 'yearly':
+        reportTitle = `Laporan Satu Tahun - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+        break
+      case 'custom':
+        reportTitle = `Laporan Custom - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+        break
     }
     doc.text(reportTitle, 14, 28)
     doc.text(`Dicetak pada: ${formatDate(new Date())}`, 14, 34)
@@ -636,13 +682,22 @@ const exportExcel = () => {
 
     // Report title based on type
     let reportTitle = ''
-    if (reportType.value === 'daily') {
-      reportTitle = 'Laporan Harian - ' + formatDateOnly(new Date())
-    } else if (reportType.value === 'monthly') {
-      const monthName = monthOptions.find(m => m.value === monthFilter.month)?.label
-      reportTitle = `Laporan Bulanan - ${monthName} ${monthFilter.year}`
-    } else if (reportType.value === 'range') {
-      reportTitle = `Laporan Periode - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+    switch (reportType.value) {
+      case 'today':
+        reportTitle = 'Laporan Hari Ini - ' + formatDateOnly(new Date())
+        break
+      case 'weekly':
+        reportTitle = `Laporan Satu Minggu - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+        break
+      case 'monthly':
+        reportTitle = `Laporan Satu Bulan - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+        break
+      case 'yearly':
+        reportTitle = `Laporan Satu Tahun - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+        break
+      case 'custom':
+        reportTitle = `Laporan Custom - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+        break
     }
 
     // Sheet 1: Summary
@@ -705,7 +760,8 @@ const exportExcel = () => {
     }
 
     // Sheet 4: Daily Data (for monthly report)
-    if (reportType.value === 'monthly' && currentReport.value.dailyData?.length) {
+    // Sheet 4: Daily Data (jika tersedia)
+    if (currentReport.value.dailyData?.length) {
       const dailyHeader = ['Tanggal', 'Pemasukan', 'Pengeluaran', 'Keuntungan', 'Jumlah Transaksi']
       const dailyData = currentReport.value.dailyData.map(day => [
         day.date,
@@ -717,7 +773,7 @@ const exportExcel = () => {
 
       const wsDaily = XLSX.utils.aoa_to_sheet([dailyHeader, ...dailyData])
       wsDaily['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }]
-      XLSX.utils.book_append_sheet(wb, wsDaily, 'Data Harian')
+      XLSX.utils.book_append_sheet(wb, wsDaily, 'Data Per Hari')
     }
 
     // Save file
@@ -743,63 +799,18 @@ const exportExcel = () => {
 const today = new Date().toISOString().split('T')[0]
 dateRange.from = today
 dateRange.to = today
-
-// Watch for month filter changes
-watch([() => monthFilter.year, () => monthFilter.month], () => {
-  if (reportType.value === 'monthly') {
-    fetchReport()
-  }
-})
 </script>
 
 <style scoped>
-.gradient-card {
-  border-radius: 12px;
-  overflow: hidden;
+/* Summary Cards */
+.summary-card {
+  border-radius: 8px;
   transition: transform 0.2s, box-shadow 0.2s;
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
 }
 
-.gradient-card .q-card__section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.gradient-card:hover {
+.summary-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-}
-
-.gradient-green {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-}
-
-.gradient-red {
-  background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
-}
-
-.gradient-blue {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-
-.gradient-orange {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-}
-
-/* Modern Card Styling */
-.modern-card {
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.modern-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Floating Action Button */
