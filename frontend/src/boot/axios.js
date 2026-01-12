@@ -2,11 +2,11 @@ import { defineBoot } from '#q-app/wrappers'
 import axios from 'axios'
 import { useAuthStore } from 'stores/auth-store'
 
+// Gunakan environment variable untuk API URL
+// Untuk development: http://localhost:3001/api
+// Untuk production: Set VITE_API_URL di Vercel
 const api = axios.create({
-  baseURL:
-    process.env.NODE_ENV === 'production'
-      ? 'https://your-production-api-url.com/api'
-      : 'http://localhost:3001/api'
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 })
 
 export default defineBoot(({ app, router }) => {
