@@ -23,8 +23,8 @@ router.get('/', [
   query('page').optional().isInt({ min: 1 }).withMessage('Page harus integer positif'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit harus 1-100'),
   query('type').optional().isIn(['masuk', 'keluar']).withMessage('Type harus masuk atau keluar'),
-  query('startDate').optional().isISO8601().withMessage('Format tanggal tidak valid'),
-  query('endDate').optional().isISO8601().withMessage('Format tanggal tidak valid'),
+  query('startDate').optional().isString().withMessage('Format tanggal tidak valid'),
+  query('endDate').optional().isString().withMessage('Format tanggal tidak valid'),
 ], validateInput, async (req, res) => {
   try {
     const { 
@@ -56,10 +56,16 @@ router.get('/', [
     if (startDate || endDate) {
       whereCondition.transactionDate = {};
       if (startDate) {
-        whereCondition.transactionDate[require('sequelize').Op.gte] = new Date(startDate);
+        // Parse as YYYY-MM-DD and set to start of day in local time
+        const [year, month, day] = startDate.split('-').map(Number);
+        const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+        whereCondition.transactionDate[require('sequelize').Op.gte] = start;
       }
       if (endDate) {
-        whereCondition.transactionDate[require('sequelize').Op.lte] = new Date(endDate);
+        // Parse as YYYY-MM-DD and set to end of day in local time
+        const [year, month, day] = endDate.split('-').map(Number);
+        const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+        whereCondition.transactionDate[require('sequelize').Op.lte] = end;
       }
     }
 

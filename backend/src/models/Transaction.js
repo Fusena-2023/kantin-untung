@@ -24,7 +24,10 @@ const Transaction = sequelize.define('Transaction', {
     type: DataTypes.TEXT,
     allowNull: true,
     validate: {
-      len: [1, 500],
+      len: {
+        args: [0, 500],
+        msg: 'Deskripsi maksimal 500 karakter'
+      }
     },
   },
   category: {

@@ -342,7 +342,7 @@ const onSubmit = async () => {
     const transactionData = {
       type: form.value.type,
       amount: form.value.amount,
-      description: form.value.description ? form.value.description.trim() : '',
+      description: form.value.description?.trim() || null,
       category: form.value.category.trim(),
       transactionDate: localISOString
     }

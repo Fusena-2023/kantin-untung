@@ -319,7 +319,8 @@ router.get('/monthly', [
     
     const startOfMonthString = `${year}-${String(month).padStart(2, '0')}-01`;
     const endOfMonthDate = new Date(year, month, 0);
-    const endOfMonthString = `${year}-${String(month).padStart(2, '0')}-${String(endOfMonthDate.getDate()).padStart(2, '0')}`;
+    const daysInMonth = endOfMonthDate.getDate();
+    const endOfMonthString = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
 
     const transactions = await Transaction.findAll({
       where: sequelize.where(
@@ -356,7 +357,6 @@ router.get('/monthly', [
 
     // Group by date
     const dailyData = {};
-    const daysInMonth = endOfMonth.getDate();
     
     for (let day = 1; day <= daysInMonth; day++) {
       const dateKey = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
@@ -430,8 +430,8 @@ router.get('/monthly', [
 
 // Custom date range report
 router.get('/range', [
-  query('startDate').isISO8601().withMessage('Format tanggal mulai tidak valid'),
-  query('endDate').isISO8601().withMessage('Format tanggal akhir tidak valid')
+  query('startDate').isString().withMessage('Format tanggal mulai tidak valid'),
+  query('endDate').isString().withMessage('Format tanggal akhir tidak valid')
 ], validateInput, authorize(1), async (req, res) => {
   try {
     const startDate = req.query.startDate.split('T')[0];

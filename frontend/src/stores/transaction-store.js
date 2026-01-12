@@ -142,8 +142,13 @@ export const useTransactionStore = defineStore('transaction', {
         this.transactions.filter(t => t.id !== id)
     },
 
-    setFilters(filters) {
-      this.filters = { ...this.filters, ...filters }
+    setFilters(newFilters) {
+      // Replace filter values with new values (not merge)
+      Object.keys(newFilters).forEach(key => {
+        if (key in this.filters) {
+          this.filters[key] = newFilters[key]
+        }
+      })
       this.pagination.page = 1
     },
 

@@ -317,24 +317,41 @@
       </q-card-section>
     </q-card>
 
-    <!-- Floating Action Button -->
+    <!-- Floating Action Button with Auto-hide -->
     <q-page-sticky position="bottom-right" :offset="[18, 18]">
-      <q-btn
-        fab
-        icon="add"
-        color="primary"
-        to="/app/transactions/create"
-        class="fab-button"
-        size="lg"
-      >
-        <q-tooltip
-          anchor="center left"
-          self="center right"
-          :offset="[10, 0]"
-          class="bg-primary text-subtitle2"
+      <transition name="fab-slide">
+        <q-btn
+          v-show="showFab"
+          fab
+          icon="add"
+          color="primary"
+          to="/app/transactions/create"
+          class="fab-button"
+          size="lg"
         >
-          Tambah Transaksi Baru
-        </q-tooltip>
+          <q-tooltip
+            anchor="center left"
+            self="center right"
+            :offset="[10, 0]"
+            class="bg-primary text-subtitle2"
+          >
+            Tambah Transaksi Baru
+          </q-tooltip>
+        </q-btn>
+      </transition>
+    </q-page-sticky>
+
+    <!-- Mini FAB to show main FAB when hidden -->
+    <q-page-sticky position="bottom-right" :offset="[18, 18]" v-show="!showFab && fabHiddenByScroll">
+      <q-btn
+        round
+        size="sm"
+        color="grey-7"
+        icon="add"
+        class="mini-fab"
+        @click="showFab = true; fabHiddenByScroll = false"
+      >
+        <q-tooltip>Tampilkan tombol</q-tooltip>
       </q-btn>
     </q-page-sticky>
 
@@ -401,7 +418,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from 'stores/auth-store'
 import { useTransactionStore } from 'stores/transaction-store'
@@ -411,6 +428,36 @@ import categoryService from 'src/services/category'
 const router = useRouter()
 const authStore = useAuthStore()
 const transactionStore = useTransactionStore()
+
+// FAB visibility control
+const showFab = ref(true)
+const fabHiddenByScroll = ref(false)
+let lastScrollTop = 0
+let scrollTimeout = null
+
+const handleScroll = () => {
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+
+  // Hide FAB when scrolling down, show when scrolling up
+  if (scrollTop > lastScrollTop && scrollTop > 100) {
+    // Scrolling down
+    showFab.value = false
+    fabHiddenByScroll.value = true
+  } else {
+    // Scrolling up
+    showFab.value = true
+    fabHiddenByScroll.value = false
+  }
+
+  lastScrollTop = scrollTop <= 0 ? 0 : scrollTop
+
+  // Auto show FAB after user stops scrolling
+  if (scrollTimeout) clearTimeout(scrollTimeout)
+  scrollTimeout = setTimeout(() => {
+    showFab.value = true
+    fabHiddenByScroll.value = false
+  }, 2000) // Show after 2 seconds of no scrolling
+}
 
 const showViewDialog = ref(false)
 const selectedTransaction = ref(null)
@@ -454,10 +501,19 @@ const dateRange = ref(null)
 const dateRangeText = computed(() => {
   if (!dateRange.value) return ''
   if (typeof dateRange.value === 'string') {
+    // Single date selected
     return formatDateShort(dateRange.value)
   }
   if (dateRange.value.from && dateRange.value.to) {
+    // Date range: check if same date
+    if (dateRange.value.from === dateRange.value.to) {
+      return formatDateShort(dateRange.value.from)
+    }
     return `${formatDateShort(dateRange.value.from)} - ${formatDateShort(dateRange.value.to)}`
+  }
+  if (dateRange.value.from) {
+    // Only from date selected
+    return formatDateShort(dateRange.value.from)
   }
   return ''
 })
@@ -503,7 +559,12 @@ watch(dateRange, (newVal) => {
   if (!newVal) {
     filters.startDate = null
     filters.endDate = null
+  } else if (typeof newVal === 'string') {
+    // Single date selected
+    filters.startDate = newVal
+    filters.endDate = newVal
   } else if (typeof newVal === 'object' && newVal.from) {
+    // Date range selected
     filters.startDate = newVal.from
     filters.endDate = newVal.to || newVal.from
   }
@@ -583,20 +644,23 @@ const onRefresh = async (done) => {
 }
 
 const applyFilters = () => {
-  // Clean filters before setting
-  const cleanedFilters = {}
-  Object.keys(filters).forEach(key => {
-    const value = filters[key]
-    if (value && value !== '' && value !== null && value !== undefined) {
-      cleanedFilters[key] = value
-    }
-  })
+  // Set filters with proper null values for empty fields
+  const filtersToApply = {
+    search: filters.search || null,
+    type: filters.type || null,
+    category: filters.category || null,
+    startDate: filters.startDate || null,
+    endDate: filters.endDate || null
+  }
 
-  transactionStore.setFilters(cleanedFilters)
+  // Use clearFilters first to reset, then set new values
+  transactionStore.clearFilters()
+  transactionStore.setFilters(filtersToApply)
   fetchTransactions()
 }
 
 const resetFilters = () => {
+  // Reset local filter state
   filters.search = ''
   filters.type = null
   filters.category = null
@@ -606,7 +670,8 @@ const resetFilters = () => {
   categoryOptions.value = []
   filteredCategoryOptions.value = []
 
-  transactionStore.setFilters({})
+  // Use clearFilters to properly reset store filters
+  transactionStore.clearFilters()
   fetchTransactions()
 }
 
@@ -662,6 +727,15 @@ onMounted(() => {
 
   // Then fetch transactions
   fetchTransactions()
+
+  // Add scroll listener for FAB auto-hide
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  // Cleanup scroll listener
+  window.removeEventListener('scroll', handleScroll)
+  if (scrollTimeout) clearTimeout(scrollTimeout)
 })
 </script>
 
@@ -679,5 +753,34 @@ onMounted(() => {
 
 .fab-button:active {
   transform: scale(0.95);
+}
+
+/* FAB slide transition */
+.fab-slide-enter-active,
+.fab-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab-slide-enter-from,
+.fab-slide-leave-to {
+  opacity: 0;
+  transform: translateY(60px) scale(0.5);
+}
+
+.fab-slide-enter-to,
+.fab-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Mini FAB for restore */
+.mini-fab {
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.mini-fab:hover {
+  opacity: 1;
+  transform: scale(1.1);
 }
 </style>

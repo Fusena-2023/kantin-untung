@@ -9,13 +9,22 @@
           </p>
         </div>
         <div class="col-auto gt-xs">
-          <q-btn
-            color="primary"
-            icon="file_download"
-            label="Export PDF"
-            @click="exportReport"
-            no-caps
-          />
+          <q-btn-group>
+            <q-btn
+              color="primary"
+              icon="file_download"
+              label="Export PDF"
+              @click="exportReport"
+              no-caps
+            />
+            <q-btn
+              color="positive"
+              icon="table_chart"
+              label="Export Excel"
+              @click="exportExcel"
+              no-caps
+            />
+          </q-btn-group>
         </div>
       </div>
 
@@ -321,23 +330,25 @@
 
     <!-- Floating Action Button (Mobile Only) -->
     <q-page-sticky position="bottom-right" :offset="[18, 18]" class="lt-sm">
-      <q-btn
-        fab
-        icon="file_download"
+      <q-fab
         color="primary"
-        @click="exportReport"
-        class="fab-button"
-        size="lg"
+        icon="file_download"
+        direction="up"
+        vertical-actions-align="right"
       >
-        <q-tooltip
-          anchor="center left"
-          self="center right"
-          :offset="[10, 0]"
-          class="bg-primary text-subtitle2"
-        >
-          Export PDF
-        </q-tooltip>
-      </q-btn>
+        <q-fab-action
+          color="primary"
+          icon="picture_as_pdf"
+          label="PDF"
+          @click="exportReport"
+        />
+        <q-fab-action
+          color="positive"
+          icon="table_chart"
+          label="Excel"
+          @click="exportExcel"
+        />
+      </q-fab>
     </q-page-sticky>
   </q-page>
 </template>
@@ -349,6 +360,7 @@ import { useReportStore } from 'stores/report-store'
 import { formatCurrency, formatDate, formatDateOnly, dateToIndonesian } from 'src/utils/format'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import * as XLSX from 'xlsx'
 
 const $q = useQuasar()
 const reportStore = useReportStore()
@@ -595,7 +607,7 @@ const exportReport = () => {
 
     $q.notify({
       color: 'positive',
-      message: 'Laporan berhasil di-export',
+      message: 'Laporan berhasil di-export ke PDF',
       icon: 'check_circle'
     })
   } catch (error) {
@@ -603,6 +615,125 @@ const exportReport = () => {
     $q.notify({
       color: 'negative',
       message: 'Gagal export laporan: ' + error.message,
+      icon: 'error'
+    })
+  }
+}
+
+const exportExcel = () => {
+  if (!currentReport.value) {
+    $q.notify({
+      color: 'warning',
+      message: 'Tidak ada data untuk di-export',
+      icon: 'warning'
+    })
+    return
+  }
+
+  try {
+    // Create workbook
+    const wb = XLSX.utils.book_new()
+
+    // Report title based on type
+    let reportTitle = ''
+    if (reportType.value === 'daily') {
+      reportTitle = 'Laporan Harian - ' + formatDateOnly(new Date())
+    } else if (reportType.value === 'monthly') {
+      const monthName = monthOptions.find(m => m.value === monthFilter.month)?.label
+      reportTitle = `Laporan Bulanan - ${monthName} ${monthFilter.year}`
+    } else if (reportType.value === 'range') {
+      reportTitle = `Laporan Periode - ${formatDateOnly(dateRange.from)} s/d ${formatDateOnly(dateRange.to)}`
+    }
+
+    // Sheet 1: Summary
+    const summaryData = [
+      ['LAPORAN KEUANGAN KANTIN UNTUNG'],
+      [reportTitle],
+      [`Dicetak pada: ${formatDate(new Date())}`],
+      [],
+      ['RINGKASAN'],
+      ['Keterangan', 'Nilai'],
+      ['Total Pemasukan', currentReport.value.summary?.totalIncome || 0],
+      ['Total Pengeluaran', currentReport.value.summary?.totalExpense || 0],
+      ['Keuntungan', currentReport.value.summary?.profit || 0],
+      ['Total Transaksi', currentReport.value.summary?.totalTransactions || 0]
+    ]
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData)
+
+    // Set column widths
+    wsSummary['!cols'] = [{ wch: 25 }, { wch: 20 }]
+
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan')
+
+    // Sheet 2: Category Breakdown
+    if (currentReport.value.byCategory?.length) {
+      const categoryHeader = ['Kategori', 'Jumlah Transaksi', 'Pemasukan', 'Pengeluaran']
+      const categoryData = currentReport.value.byCategory.map(cat => [
+        cat.category,
+        cat.count,
+        cat.income || 0,
+        cat.expense || 0
+      ])
+
+      const wsCategory = XLSX.utils.aoa_to_sheet([categoryHeader, ...categoryData])
+      wsCategory['!cols'] = [{ wch: 25 }, { wch: 18 }, { wch: 15 }, { wch: 15 }]
+      XLSX.utils.book_append_sheet(wb, wsCategory, 'Per Kategori')
+    }
+
+    // Sheet 3: Transactions Detail
+    if (currentReport.value.transactions?.length) {
+      const transactionHeader = ['Tanggal', 'Tipe', 'Deskripsi', 'Kategori', 'Jumlah', 'Dibuat Oleh']
+      const transactionData = currentReport.value.transactions.map(tr => [
+        formatDateOnly(tr.transactionDate),
+        tr.type === 'masuk' ? 'Pemasukan' : 'Pengeluaran',
+        tr.description || '-',
+        tr.category,
+        parseFloat(tr.amount),
+        tr.user?.fullName || '-'
+      ])
+
+      const wsTransactions = XLSX.utils.aoa_to_sheet([transactionHeader, ...transactionData])
+      wsTransactions['!cols'] = [
+        { wch: 15 },
+        { wch: 12 },
+        { wch: 35 },
+        { wch: 20 },
+        { wch: 15 },
+        { wch: 20 }
+      ]
+      XLSX.utils.book_append_sheet(wb, wsTransactions, 'Detail Transaksi')
+    }
+
+    // Sheet 4: Daily Data (for monthly report)
+    if (reportType.value === 'monthly' && currentReport.value.dailyData?.length) {
+      const dailyHeader = ['Tanggal', 'Pemasukan', 'Pengeluaran', 'Keuntungan', 'Jumlah Transaksi']
+      const dailyData = currentReport.value.dailyData.map(day => [
+        day.date,
+        day.income || 0,
+        day.expense || 0,
+        day.profit || 0,
+        day.count || 0
+      ])
+
+      const wsDaily = XLSX.utils.aoa_to_sheet([dailyHeader, ...dailyData])
+      wsDaily['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }]
+      XLSX.utils.book_append_sheet(wb, wsDaily, 'Data Harian')
+    }
+
+    // Save file
+    const fileName = `Laporan_${reportType.value}_${new Date().getTime()}.xlsx`
+    XLSX.writeFile(wb, fileName)
+
+    $q.notify({
+      color: 'positive',
+      message: 'Laporan berhasil di-export ke Excel',
+      icon: 'check_circle'
+    })
+  } catch (error) {
+    console.error('Export Excel error:', error)
+    $q.notify({
+      color: 'negative',
+      message: 'Gagal export ke Excel: ' + error.message,
       icon: 'error'
     })
   }
