@@ -39,15 +39,33 @@
           </q-item-section>
         </q-item>
 
-        <!-- Transactions - For All Users -->
-        <q-item clickable v-ripple to="/app/transactions">
-          <q-item-section avatar>
-            <q-icon name="receipt" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Transaksi</q-item-label>
-          </q-item-section>
-        </q-item>
+        <!-- Input - Expandable Menu -->
+        <q-expansion-item
+          icon="edit_note"
+          label="Input"
+          header-class="text-weight-medium"
+          default-opened
+        >
+          <!-- Transaksi Warung - For All Users -->
+          <q-item clickable v-ripple to="/app/transactions" class="q-pl-lg">
+            <q-item-section avatar>
+              <q-icon name="store" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Transaksi Warung</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <!-- Input Catering - For All Users -->
+          <q-item clickable v-ripple to="/app/plate-counts" class="q-pl-lg">
+            <q-item-section avatar>
+              <q-icon name="restaurant" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Input Catering</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-expansion-item>
 
         <!-- User Management - Only for Pemilik -->
         <q-item
@@ -64,40 +82,33 @@
           </q-item-section>
         </q-item>
 
-        <!-- Reports - Only for Pemilik -->
-        <q-item
-          clickable
-          v-ripple
-          to="/app/reports"
+        <!-- Laporan - Expandable Menu (Only for Pemilik) -->
+        <q-expansion-item
           v-if="isPemilik"
+          icon="assessment"
+          label="Laporan"
+          header-class="text-weight-medium"
         >
-          <q-item-section avatar>
-            <q-icon name="assessment" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Laporan</q-item-label>
-          </q-item-section>
-        </q-item>
+          <!-- Laporan Transaksi Warung -->
+          <q-item clickable v-ripple to="/app/reports" class="q-pl-lg">
+            <q-item-section avatar>
+              <q-icon name="receipt_long" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Laporan Transaksi Warung</q-item-label>
+            </q-item-section>
+          </q-item>
 
-        <!-- Plate Count - For All Users -->
-        <q-item clickable v-ripple to="/app/plate-counts">
-          <q-item-section avatar>
-            <q-icon name="restaurant" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Input Piring</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <!-- Plate Count Report - For Pemilik Only -->
-        <q-item v-if="authStore.isPemilik" clickable v-ripple to="/app/plate-counts/report">
-          <q-item-section avatar>
-            <q-icon name="analytics" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Laporan Piring</q-item-label>
-          </q-item-section>
-        </q-item>
+          <!-- Laporan Catering -->
+          <q-item clickable v-ripple to="/app/plate-counts/report" class="q-pl-lg">
+            <q-item-section avatar>
+              <q-icon name="restaurant_menu" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Laporan Catering</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-expansion-item>
 
         <q-separator />
 
