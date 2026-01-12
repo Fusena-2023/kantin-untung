@@ -109,30 +109,21 @@
             <!-- 5. Tanggal Transaksi -->
             <div class="col-12 col-md-6">
               <q-input
-                v-model="form.transactionDate"
+                v-model="displayDate"
                 label="Tanggal Transaksi *"
                 outlined
+                readonly
                 :rules="[val => !!val || 'Tanggal transaksi diperlukan']"
+                hint="Format: DD/MM/YYYY (waktu menggunakan waktu sistem)"
               >
                 <template v-slot:prepend>
                   <q-icon name="event" class="cursor-pointer">
                     <q-popup-proxy cover transition-show="scale" transition-hide="scale">
                       <q-date v-model="form.transactionDate" mask="YYYY-MM-DD">
                         <div class="row items-center justify-end">
-                          <q-btn v-close-popup label="Close" color="primary" flat />
+                          <q-btn v-close-popup label="Tutup" color="primary" flat />
                         </div>
                       </q-date>
-                    </q-popup-proxy>
-                  </q-icon>
-                </template>
-                <template v-slot:append>
-                  <q-icon name="access_time" class="cursor-pointer">
-                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                      <q-time v-model="form.transactionTime" mask="HH:mm" format24h>
-                        <div class="row items-center justify-end">
-                          <q-btn v-close-popup label="Close" color="primary" flat />
-                        </div>
-                      </q-time>
                     </q-popup-proxy>
                   </q-icon>
                 </template>
@@ -186,6 +177,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTransactionStore } from 'stores/transaction-store'
 import categoryService from 'src/services/category'
+import { dateToIndonesian } from 'src/utils/format'
 
 const router = useRouter()
 const route = useRoute()
@@ -204,20 +196,18 @@ const getLocalDateString = (date) => {
   return `${year}-${month}-${day}`
 }
 
-// Helper function to get time string in local timezone (HH:mm)
-const getLocalTimeString = (date) => {
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${hours}:${minutes}`
-}
-
 const form = ref({
   type: '',
   amount: null,
   description: '',
   category: '',
-  transactionDate: getLocalDateString(new Date()),
-  transactionTime: getLocalTimeString(new Date())
+  transactionDate: getLocalDateString(new Date())
+})
+
+// Computed untuk menampilkan tanggal dalam format Indonesia DD/MM/YYYY
+const displayDate = computed(() => {
+  if (!form.value.transactionDate) return ''
+  return dateToIndonesian(form.value.transactionDate)
 })
 
 const typeOptions = [
@@ -312,8 +302,7 @@ const loadTransaction = async () => {
       amount: parseFloat(transaction.amount),
       description: transaction.description || '',
       category: transaction.category,
-      transactionDate: transactionDateTime.toISOString().split('T')[0],
-      transactionTime: transactionDateTime.toTimeString().split(' ')[0].substring(0, 5)
+      transactionDate: transactionDateTime.toISOString().split('T')[0]
     }
   } catch (error) {
     // Simple alert instead of $q.notify
@@ -328,12 +317,14 @@ const onSubmit = async () => {
   try {
     isLoading.value = true
 
-    // Create a date string that represents the local datetime
-    // Format: 2025-12-14T14:30:00 (local time, not UTC)
-    const localDateTimeString = `${form.value.transactionDate}T${form.value.transactionTime}:00`
+    // Gunakan waktu sistem saat ini untuk waktu transaksi
+    const now = new Date()
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
 
-    // Parse as local time (not UTC)
-    // We'll create a Date object and then adjust for timezone
+    // Gabungkan tanggal yang dipilih dengan waktu sistem saat ini
+    const localDateTimeString = `${form.value.transactionDate}T${currentTime}`
+
+    // Parse sebagai waktu lokal
     const parts = localDateTimeString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
     const year = parseInt(parts[1])
     const month = parseInt(parts[2]) - 1
@@ -344,7 +335,7 @@ const onSubmit = async () => {
 
     const transactionDateTime = new Date(year, month, day, hours, minutes, seconds)
 
-    // Convert to ISO but subtract the timezone offset to get back to local time in ISO format
+    // Convert to ISO format
     const tzOffset = transactionDateTime.getTimezoneOffset() * 60000
     const localISOString = new Date(transactionDateTime.getTime() - tzOffset).toISOString()
 
@@ -393,8 +384,7 @@ const onReset = () => {
       amount: null,
       description: '',
       category: '',
-      transactionDate: getLocalDateString(new Date()),
-      transactionTime: getLocalTimeString(new Date())
+      transactionDate: getLocalDateString(new Date())
     }
   }
 }

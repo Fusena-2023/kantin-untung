@@ -37,24 +37,50 @@
           />
 
           <q-input
-            v-model="dateRange.from"
+            v-model="displayDateFrom"
             label="Tanggal Mulai"
-            type="date"
             outlined
             dense
+            readonly
             class="col-12 col-md-3"
             v-show="reportType === 'range'"
-          />
+            hint="Format: DD/MM/YYYY"
+          >
+            <template v-slot:prepend>
+              <q-icon name="event" class="cursor-pointer">
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                  <q-date v-model="dateRange.from" mask="YYYY-MM-DD">
+                    <div class="row items-center justify-end">
+                      <q-btn v-close-popup label="Tutup" color="primary" flat />
+                    </div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input>
 
           <q-input
-            v-model="dateRange.to"
+            v-model="displayDateTo"
             label="Tanggal Akhir"
-            type="date"
             outlined
             dense
+            readonly
             class="col-12 col-md-3"
             v-show="reportType === 'range'"
-          />
+            hint="Format: DD/MM/YYYY"
+          >
+            <template v-slot:prepend>
+              <q-icon name="event" class="cursor-pointer">
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                  <q-date v-model="dateRange.to" mask="YYYY-MM-DD">
+                    <div class="row items-center justify-end">
+                      <q-btn v-close-popup label="Tutup" color="primary" flat />
+                    </div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input>
 
           <q-input
             v-model="monthFilter.year"
@@ -320,7 +346,7 @@
 import { ref, computed, reactive, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useReportStore } from 'stores/report-store'
-import { formatCurrency, formatDate, formatDateOnly } from 'src/utils/format'
+import { formatCurrency, formatDate, formatDateOnly, dateToIndonesian } from 'src/utils/format'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -332,6 +358,10 @@ const dateRange = reactive({
   from: '',
   to: ''
 })
+
+// Computed untuk menampilkan tanggal dalam format Indonesia DD/MM/YYYY
+const displayDateFrom = computed(() => dateToIndonesian(dateRange.from))
+const displayDateTo = computed(() => dateToIndonesian(dateRange.to))
 
 const monthFilter = reactive({
   year: new Date().getFullYear(),

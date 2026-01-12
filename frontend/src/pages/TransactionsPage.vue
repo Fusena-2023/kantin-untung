@@ -405,7 +405,7 @@ import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from 'stores/auth-store'
 import { useTransactionStore } from 'stores/transaction-store'
-import { formatCurrency, formatDate } from 'src/utils/format'
+import { formatCurrency, formatDate, formatDateShort } from 'src/utils/format'
 import categoryService from 'src/services/category'
 
 const router = useRouter()
@@ -454,19 +454,13 @@ const dateRange = ref(null)
 const dateRangeText = computed(() => {
   if (!dateRange.value) return ''
   if (typeof dateRange.value === 'string') {
-    return dateRange.value
+    return formatDateShort(dateRange.value)
   }
   if (dateRange.value.from && dateRange.value.to) {
     return `${formatDateShort(dateRange.value.from)} - ${formatDateShort(dateRange.value.to)}`
   }
   return ''
 })
-
-const formatDateShort = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-}
 
 const clearDateRange = () => {
   dateRange.value = null
