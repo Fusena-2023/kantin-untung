@@ -107,21 +107,19 @@ const onSubmit = async () => {
   try {
     const user = await authStore.login(form.value)
 
-    // Simple success message without $q.notify
-    console.log('Login successful:', user)
-
     // Ensure token is properly set in localStorage and axios headers
     const token = authStore.token
     if (token) {
       localStorage.setItem('auth_token', token)
-      console.log('Token stored:', token.substring(0, 20) + '...')
     }
 
     // Force auth state update and complete reload
     authStore.initializeAuth()
 
     // Direct navigation based on role with full page reload
-    const targetPath = user.role === 'pemilik' ? '/app/dashboard' : '/app/transactions'
+    // Check role by ID (1 = pemilik) or by name from userRole
+    const isPemilik = user.role === 1 || user.userRole?.name === 'pemilik'
+    const targetPath = isPemilik ? '/app/dashboard' : '/app/transactions'
 
     // Force complete page reload to ensure all components reinitialize properly
     setTimeout(() => {

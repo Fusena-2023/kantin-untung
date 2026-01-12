@@ -13,8 +13,21 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => Boolean(state.token),
     userRole: (state) => state.user?.role ?? null,
-    isPemilik: (state) => state.user?.role === 'pemilik',
-    isPegawai: (state) => state.user?.role === 'pegawai'
+    // Check by role ID (1 = pemilik, 2 = pegawai), by userRole.name, or by role string from JWT
+    isPemilik: (state) => {
+      if (!state.user) return false
+      // From login response: role is number, userRole.name is string
+      // From JWT decode: role is string
+      return state.user.role === 1 ||
+             state.user.role === 'pemilik' ||
+             state.user.userRole?.name === 'pemilik'
+    },
+    isPegawai: (state) => {
+      if (!state.user) return false
+      return state.user.role === 2 ||
+             state.user.role === 'pegawai' ||
+             state.user.userRole?.name === 'pegawai'
+    }
   },
 
   actions: {
