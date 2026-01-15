@@ -4,7 +4,18 @@ const { Op } = require('sequelize');
 const PlateCount = require('../models/PlateCount');
 const { authorize } = require('../middleware/auth');
 
-// Get all plate counts dengan filter (hanya pemilik yang bisa lihat semua)
+// Valid shifts
+const VALID_SHIFTS = ['shift1', 'shift2', 'tambahan_s1', 'tambahan_s2'];
+
+// Shift labels
+const SHIFT_LABELS = {
+  shift1: 'Shift 1',
+  shift2: 'Shift 2',
+  tambahan_s1: 'Tambahan S1',
+  tambahan_s2: 'Tambahan S2'
+};
+
+// Get all plate counts dengan filter
 router.get('/', async (req, res, next) => {
   try {
     const { startDate, endDate, shift, page = 1, limit = 20 } = req.query;
@@ -14,21 +25,15 @@ router.get('/', async (req, res, next) => {
     
     // Filter by date range
     if (startDate && endDate) {
-      where.date = {
-        [Op.between]: [startDate, endDate]
-      };
+      where.date = { [Op.between]: [startDate, endDate] };
     } else if (startDate) {
-      where.date = {
-        [Op.gte]: startDate
-      };
+      where.date = { [Op.gte]: startDate };
     } else if (endDate) {
-      where.date = {
-        [Op.lte]: endDate
-      };
+      where.date = { [Op.lte]: endDate };
     }
     
     // Filter by shift
-    if (shift && ['siang', 'malam'].includes(shift)) {
+    if (shift && VALID_SHIFTS.includes(shift)) {
       where.shift = shift;
     }
     
@@ -62,14 +67,12 @@ router.get('/', async (req, res, next) => {
 // Get summary/report per periode
 router.get('/summary', async (req, res, next) => {
   try {
-    const { startDate, endDate, groupBy = 'daily' } = req.query;
+    const { startDate, endDate, period } = req.query;
     
     const where = {};
     
     if (startDate && endDate) {
-      where.date = {
-        [Op.between]: [startDate, endDate]
-      };
+      where.date = { [Op.between]: [startDate, endDate] };
     }
     
     // Pegawai hanya bisa lihat data sendiri
@@ -84,28 +87,86 @@ router.get('/summary', async (req, res, next) => {
     
     // Calculate totals
     const summary = {
+      // Total combined
       totalPlates: 0,
+      totalSgpCount: 0,
+      totalHiroseCount: 0,
       totalTransfer: 0,
-      grossIncome: 0,
-      incomeTax: 0,
-      netIncome: 0,
-      grossReturn: 0,
-      returnTax: 0,
-      netReturn: 0,
+      
+      // SGP totals
+      sgpGrossIncome: 0,
+      sgpIncomeTax: 0,
+      sgpNetIncome: 0,
+      sgpGrossReturn: 0,
+      sgpReturnTax: 0,
+      sgpNetReturn: 0,
+      
+      // Hirose totals
+      hiroseGrossIncome: 0,
+      hiroseIncomeTax: 0,
+      hiroseNetIncome: 0,
+      hiroseGrossReturn: 0,
+      hiroseReturnTax: 0,
+      hiroseNetReturn: 0,
+      
+      // Combined totals
+      totalGrossIncome: 0,
+      totalIncomeTax: 0,
+      totalNetIncome: 0,
+      totalGrossReturn: 0,
+      totalReturnTax: 0,
+      totalNetReturn: 0,
       totalTax: 0,
+      
       recordCount: records.length,
-      dailyBreakdown: {}
+      dailyBreakdown: {},
+      byShift: {
+        shift1: { sgpCount: 0, hiroseCount: 0, totalPlates: 0, totalNetIncome: 0, totalNetReturn: 0 },
+        shift2: { sgpCount: 0, hiroseCount: 0, totalPlates: 0, totalNetIncome: 0, totalNetReturn: 0 },
+        tambahan_s1: { sgpCount: 0, hiroseCount: 0, totalPlates: 0, totalNetIncome: 0, totalNetReturn: 0 },
+        tambahan_s2: { sgpCount: 0, hiroseCount: 0, totalPlates: 0, totalNetIncome: 0, totalNetReturn: 0 }
+      }
     };
     
     records.forEach(record => {
-      summary.totalPlates += parseInt(record.plateCount);
+      // Accumulate totals
+      summary.totalPlates += parseInt(record.totalPlates);
+      summary.totalSgpCount += parseInt(record.sgpCount);
+      summary.totalHiroseCount += parseInt(record.hiroseCount);
       summary.totalTransfer += parseFloat(record.totalTransfer);
-      summary.grossIncome += parseFloat(record.grossIncome);
-      summary.incomeTax += parseFloat(record.incomeTax);
-      summary.netIncome += parseFloat(record.netIncome);
-      summary.grossReturn += parseFloat(record.grossReturn);
-      summary.returnTax += parseFloat(record.returnTax);
-      summary.netReturn += parseFloat(record.netReturn);
+      
+      // SGP totals
+      summary.sgpGrossIncome += parseFloat(record.sgpGrossIncome);
+      summary.sgpIncomeTax += parseFloat(record.sgpIncomeTax);
+      summary.sgpNetIncome += parseFloat(record.sgpNetIncome);
+      summary.sgpGrossReturn += parseFloat(record.sgpGrossReturn);
+      summary.sgpReturnTax += parseFloat(record.sgpReturnTax);
+      summary.sgpNetReturn += parseFloat(record.sgpNetReturn);
+      
+      // Hirose totals
+      summary.hiroseGrossIncome += parseFloat(record.hiroseGrossIncome);
+      summary.hiroseIncomeTax += parseFloat(record.hiroseIncomeTax);
+      summary.hiroseNetIncome += parseFloat(record.hiroseNetIncome);
+      summary.hiroseGrossReturn += parseFloat(record.hiroseGrossReturn);
+      summary.hiroseReturnTax += parseFloat(record.hiroseReturnTax);
+      summary.hiroseNetReturn += parseFloat(record.hiroseNetReturn);
+      
+      // Combined totals
+      summary.totalGrossIncome += parseFloat(record.totalGrossIncome);
+      summary.totalIncomeTax += parseFloat(record.totalIncomeTax);
+      summary.totalNetIncome += parseFloat(record.totalNetIncome);
+      summary.totalGrossReturn += parseFloat(record.totalGrossReturn);
+      summary.totalReturnTax += parseFloat(record.totalReturnTax);
+      summary.totalNetReturn += parseFloat(record.totalNetReturn);
+      
+      // Aggregate by shift
+      if (summary.byShift[record.shift]) {
+        summary.byShift[record.shift].sgpCount += parseInt(record.sgpCount);
+        summary.byShift[record.shift].hiroseCount += parseInt(record.hiroseCount);
+        summary.byShift[record.shift].totalPlates += parseInt(record.totalPlates);
+        summary.byShift[record.shift].totalNetIncome += parseFloat(record.totalNetIncome);
+        summary.byShift[record.shift].totalNetReturn += parseFloat(record.totalNetReturn);
+      }
       
       // Group by date for daily breakdown
       const dateKey = record.date;
@@ -113,35 +174,67 @@ router.get('/summary', async (req, res, next) => {
         summary.dailyBreakdown[dateKey] = {
           date: dateKey,
           shifts: {},
+          totalSgpCount: 0,
+          totalHiroseCount: 0,
           totalPlates: 0,
           totalTransfer: 0,
-          grossIncome: 0,
-          netIncome: 0,
-          grossReturn: 0,
-          netReturn: 0,
+          totalGrossIncome: 0,
+          totalNetIncome: 0,
+          totalGrossReturn: 0,
+          totalNetReturn: 0,
           totalTax: 0
         };
       }
       
       summary.dailyBreakdown[dateKey].shifts[record.shift] = {
-        plateCount: parseInt(record.plateCount),
+        sgpCount: parseInt(record.sgpCount),
+        hiroseCount: parseInt(record.hiroseCount),
+        totalPlates: parseInt(record.totalPlates),
         totalTransfer: parseFloat(record.totalTransfer),
-        grossIncome: parseFloat(record.grossIncome),
-        netIncome: parseFloat(record.netIncome),
-        grossReturn: parseFloat(record.grossReturn),
-        netReturn: parseFloat(record.netReturn)
+        totalGrossIncome: parseFloat(record.totalGrossIncome),
+        totalNetIncome: parseFloat(record.totalNetIncome),
+        totalGrossReturn: parseFloat(record.totalGrossReturn),
+        totalNetReturn: parseFloat(record.totalNetReturn)
       };
       
-      summary.dailyBreakdown[dateKey].totalPlates += parseInt(record.plateCount);
+      summary.dailyBreakdown[dateKey].totalSgpCount += parseInt(record.sgpCount);
+      summary.dailyBreakdown[dateKey].totalHiroseCount += parseInt(record.hiroseCount);
+      summary.dailyBreakdown[dateKey].totalPlates += parseInt(record.totalPlates);
       summary.dailyBreakdown[dateKey].totalTransfer += parseFloat(record.totalTransfer);
-      summary.dailyBreakdown[dateKey].grossIncome += parseFloat(record.grossIncome);
-      summary.dailyBreakdown[dateKey].netIncome += parseFloat(record.netIncome);
-      summary.dailyBreakdown[dateKey].grossReturn += parseFloat(record.grossReturn);
-      summary.dailyBreakdown[dateKey].netReturn += parseFloat(record.netReturn);
-      summary.dailyBreakdown[dateKey].totalTax += parseFloat(record.incomeTax) + parseFloat(record.returnTax);
+      summary.dailyBreakdown[dateKey].totalGrossIncome += parseFloat(record.totalGrossIncome);
+      summary.dailyBreakdown[dateKey].totalNetIncome += parseFloat(record.totalNetIncome);
+      summary.dailyBreakdown[dateKey].totalGrossReturn += parseFloat(record.totalGrossReturn);
+      summary.dailyBreakdown[dateKey].totalNetReturn += parseFloat(record.totalNetReturn);
+      summary.dailyBreakdown[dateKey].totalTax += parseFloat(record.totalIncomeTax) + parseFloat(record.totalReturnTax);
     });
     
-    summary.totalTax = summary.incomeTax + summary.returnTax;
+    summary.totalTax = summary.totalIncomeTax + summary.totalReturnTax;
+    
+    // Admin transfer bank: Rp 2.900 per minggu (Senin-Minggu)
+    // Pabrik transfer setiap minggu (Senin-Minggu), dan langsung dikembalikan
+    const ADMIN_FEE_PER_WEEK = 2900;
+    
+    // Hitung jumlah hari kerja (hari dengan data) dari dailyBreakdown
+    const workingDaysCount = Object.keys(summary.dailyBreakdown).length;
+    
+    // Hitung jumlah minggu dari rentang tanggal (Senin-Minggu = 1 minggu = 1 transfer)
+    let weekCount = 0;
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const daysDiff = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      weekCount = Math.ceil(daysDiff / 7);
+    } else if (workingDaysCount > 0) {
+      weekCount = 1; // Default 1 minggu jika ada data tapi tidak ada filter
+    }
+    
+    summary.workingDaysCount = workingDaysCount;
+    summary.weekCount = weekCount;
+    summary.adminFeePerWeek = ADMIN_FEE_PER_WEEK;
+    summary.totalAdminFee = weekCount * ADMIN_FEE_PER_WEEK;
+    
+    // Final income after admin fee deduction
+    summary.finalNetIncome = summary.totalNetIncome - summary.totalAdminFee;
     
     // Convert dailyBreakdown to array
     summary.dailyBreakdown = Object.values(summary.dailyBreakdown);
@@ -155,7 +248,7 @@ router.get('/summary', async (req, res, next) => {
   }
 });
 
-// Get today's summary (quick view) - MUST be before /:id route
+// Get today's summary - MUST be before /:id route
 router.get('/today/summary', async (req, res, next) => {
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -171,36 +264,44 @@ router.get('/today/summary', async (req, res, next) => {
     const summary = {
       date: today,
       shifts: {
-        siang: null,
-        malam: null
+        shift1: null,
+        shift2: null,
+        tambahan_s1: null,
+        tambahan_s2: null
       },
+      totalSgpCount: 0,
+      totalHiroseCount: 0,
       totalPlates: 0,
       totalTransfer: 0,
-      grossIncome: 0,
-      netIncome: 0,
-      grossReturn: 0,
-      netReturn: 0,
+      totalGrossIncome: 0,
+      totalNetIncome: 0,
+      totalGrossReturn: 0,
+      totalNetReturn: 0,
       totalTax: 0
     };
     
     records.forEach(record => {
       summary.shifts[record.shift] = {
         id: record.id,
-        plateCount: parseInt(record.plateCount),
+        sgpCount: parseInt(record.sgpCount),
+        hiroseCount: parseInt(record.hiroseCount),
+        totalPlates: parseInt(record.totalPlates),
         totalTransfer: parseFloat(record.totalTransfer),
-        grossIncome: parseFloat(record.grossIncome),
-        netIncome: parseFloat(record.netIncome),
-        grossReturn: parseFloat(record.grossReturn),
-        netReturn: parseFloat(record.netReturn)
+        totalGrossIncome: parseFloat(record.totalGrossIncome),
+        totalNetIncome: parseFloat(record.totalNetIncome),
+        totalGrossReturn: parseFloat(record.totalGrossReturn),
+        totalNetReturn: parseFloat(record.totalNetReturn)
       };
       
-      summary.totalPlates += parseInt(record.plateCount);
+      summary.totalSgpCount += parseInt(record.sgpCount);
+      summary.totalHiroseCount += parseInt(record.hiroseCount);
+      summary.totalPlates += parseInt(record.totalPlates);
       summary.totalTransfer += parseFloat(record.totalTransfer);
-      summary.grossIncome += parseFloat(record.grossIncome);
-      summary.netIncome += parseFloat(record.netIncome);
-      summary.grossReturn += parseFloat(record.grossReturn);
-      summary.netReturn += parseFloat(record.netReturn);
-      summary.totalTax += parseFloat(record.incomeTax) + parseFloat(record.returnTax);
+      summary.totalGrossIncome += parseFloat(record.totalGrossIncome);
+      summary.totalNetIncome += parseFloat(record.totalNetIncome);
+      summary.totalGrossReturn += parseFloat(record.totalGrossReturn);
+      summary.totalNetReturn += parseFloat(record.totalNetReturn);
+      summary.totalTax += parseFloat(record.totalIncomeTax) + parseFloat(record.totalReturnTax);
     });
     
     res.json({
@@ -246,7 +347,8 @@ router.post('/', async (req, res, next) => {
     const { 
       date, 
       shift, 
-      plateCount: count,
+      sgpCount = 0,
+      hiroseCount = 0,
       pricePerPlate = 11500,
       incomePerPlate = 7000,
       returnPerPlate = 4500,
@@ -255,21 +357,21 @@ router.post('/', async (req, res, next) => {
     } = req.body;
     
     // Validation
-    if (!date || !shift || count === undefined) {
+    if (!date || !shift) {
       return res.status(400).json({
         success: false,
-        message: 'Tanggal, shift, dan jumlah piring wajib diisi'
+        message: 'Tanggal dan shift wajib diisi'
       });
     }
     
-    if (!['siang', 'malam'].includes(shift)) {
+    if (!VALID_SHIFTS.includes(shift)) {
       return res.status(400).json({
         success: false,
-        message: 'Shift harus siang atau malam'
+        message: 'Shift harus: Shift 1, Shift 2, Tambahan S1, atau Tambahan S2'
       });
     }
     
-    if (parseInt(count) < 0) {
+    if (parseInt(sgpCount) < 0 || parseInt(hiroseCount) < 0) {
       return res.status(400).json({
         success: false,
         message: 'Jumlah piring tidak boleh negatif'
@@ -284,14 +386,15 @@ router.post('/', async (req, res, next) => {
     if (existing) {
       return res.status(400).json({
         success: false,
-        message: `Data untuk shift ${shift} tanggal ini sudah ada. Silakan edit data yang sudah ada.`
+        message: `Data untuk ${SHIFT_LABELS[shift]} tanggal ini sudah ada. Silakan edit data yang sudah ada.`
       });
     }
     
     const plateCountRecord = await PlateCount.create({
       date,
       shift,
-      plateCount: parseInt(count),
+      sgpCount: parseInt(sgpCount),
+      hiroseCount: parseInt(hiroseCount),
       pricePerPlate,
       incomePerPlate,
       returnPerPlate,
@@ -332,7 +435,8 @@ router.put('/:id', async (req, res, next) => {
     const { 
       date, 
       shift, 
-      plateCount: count,
+      sgpCount,
+      hiroseCount,
       pricePerPlate,
       incomePerPlate,
       returnPerPlate,
@@ -353,21 +457,59 @@ router.put('/:id', async (req, res, next) => {
       if (existing) {
         return res.status(400).json({
           success: false,
-          message: `Data untuk shift ${shift || plateCount.shift} tanggal ini sudah ada.`
+          message: `Data untuk ${SHIFT_LABELS[shift || plateCount.shift]} tanggal ini sudah ada.`
         });
       }
     }
     
-    await plateCount.update({
-      date: date || plateCount.date,
-      shift: shift || plateCount.shift,
-      plateCount: count !== undefined ? parseInt(count) : plateCount.plateCount,
-      pricePerPlate: pricePerPlate || plateCount.pricePerPlate,
-      incomePerPlate: incomePerPlate || plateCount.incomePerPlate,
-      returnPerPlate: returnPerPlate || plateCount.returnPerPlate,
-      taxPercentage: taxPercentage !== undefined ? taxPercentage : plateCount.taxPercentage,
-      notes: notes !== undefined ? notes : plateCount.notes
-    });
+    // Update fields
+    plateCount.date = date || plateCount.date;
+    plateCount.shift = shift || plateCount.shift;
+    plateCount.sgpCount = sgpCount !== undefined ? parseInt(sgpCount) : plateCount.sgpCount;
+    plateCount.hiroseCount = hiroseCount !== undefined ? parseInt(hiroseCount) : plateCount.hiroseCount;
+    plateCount.pricePerPlate = pricePerPlate || plateCount.pricePerPlate;
+    plateCount.incomePerPlate = incomePerPlate || plateCount.incomePerPlate;
+    plateCount.returnPerPlate = returnPerPlate || plateCount.returnPerPlate;
+    plateCount.taxPercentage = taxPercentage !== undefined ? taxPercentage : plateCount.taxPercentage;
+    plateCount.notes = notes !== undefined ? notes : plateCount.notes;
+    
+    // Manually recalculate all computed fields
+    const sgp = parseInt(plateCount.sgpCount) || 0;
+    const hirose = parseInt(plateCount.hiroseCount) || 0;
+    const price = parseFloat(plateCount.pricePerPlate) || 9500;
+    const income = parseFloat(plateCount.incomePerPlate) || 7000;
+    const returnPP = parseFloat(plateCount.returnPerPlate) || 2500;
+    const tax = parseFloat(plateCount.taxPercentage) || 2;
+    
+    // Total plates
+    plateCount.totalPlates = sgp + hirose;
+    plateCount.totalTransfer = plateCount.totalPlates * price;
+    
+    // SGP calculations
+    plateCount.sgpGrossIncome = sgp * income;
+    plateCount.sgpIncomeTax = plateCount.sgpGrossIncome * (tax / 100);
+    plateCount.sgpNetIncome = plateCount.sgpGrossIncome - plateCount.sgpIncomeTax;
+    plateCount.sgpGrossReturn = sgp * returnPP;
+    plateCount.sgpReturnTax = plateCount.sgpGrossReturn * (tax / 100);
+    plateCount.sgpNetReturn = plateCount.sgpGrossReturn - plateCount.sgpReturnTax;
+    
+    // Hirose calculations
+    plateCount.hiroseGrossIncome = hirose * income;
+    plateCount.hiroseIncomeTax = plateCount.hiroseGrossIncome * (tax / 100);
+    plateCount.hiroseNetIncome = plateCount.hiroseGrossIncome - plateCount.hiroseIncomeTax;
+    plateCount.hiroseGrossReturn = hirose * returnPP;
+    plateCount.hiroseReturnTax = plateCount.hiroseGrossReturn * (tax / 100);
+    plateCount.hiroseNetReturn = plateCount.hiroseGrossReturn - plateCount.hiroseReturnTax;
+    
+    // Combined totals
+    plateCount.totalGrossIncome = plateCount.sgpGrossIncome + plateCount.hiroseGrossIncome;
+    plateCount.totalIncomeTax = plateCount.sgpIncomeTax + plateCount.hiroseIncomeTax;
+    plateCount.totalNetIncome = plateCount.sgpNetIncome + plateCount.hiroseNetIncome;
+    plateCount.totalGrossReturn = plateCount.sgpGrossReturn + plateCount.hiroseGrossReturn;
+    plateCount.totalReturnTax = plateCount.sgpReturnTax + plateCount.hiroseReturnTax;
+    plateCount.totalNetReturn = plateCount.sgpNetReturn + plateCount.hiroseNetReturn;
+    
+    await plateCount.save();
     
     res.json({
       success: true,

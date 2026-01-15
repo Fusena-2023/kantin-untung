@@ -13,26 +13,39 @@ const PlateCount = sequelize.define('PlateCount', {
     comment: 'Tanggal pencatatan',
   },
   shift: {
-    type: DataTypes.ENUM('siang', 'malam'),
+    type: DataTypes.STRING(20),
     allowNull: false,
-    comment: 'Shift siang atau malam',
+    validate: {
+      isIn: [['shift1', 'shift2', 'tambahan_s1', 'tambahan_s2']],
+    },
+    comment: 'Shift: shift1, shift2, tambahan_s1, tambahan_s2',
   },
-  plateCount: {
+  
+  // Jumlah piring per sumber
+  sgpCount: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'plate_count',
-    validate: {
-      min: 0,
-    },
-    comment: 'Jumlah piring yang dimakan',
+    defaultValue: 0,
+    field: 'sgp_count',
+    validate: { min: 0 },
+    comment: 'Jumlah piring SGP',
   },
+  hiroseCount: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    field: 'hirose_count',
+    validate: { min: 0 },
+    comment: 'Jumlah piring Hirose',
+  },
+  
   // Harga konfigurasi (bisa di-override per record jika ada perubahan harga)
   pricePerPlate: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
     field: 'price_per_plate',
-    defaultValue: 11500,
-    comment: 'Harga per piring dari pabrik (Rp 11.500)',
+    defaultValue: 9500,
+    comment: 'Harga per piring dari pabrik (Rp 9.500)',
   },
   incomePerPlate: {
     type: DataTypes.DECIMAL(10, 2),
@@ -45,8 +58,8 @@ const PlateCount = sequelize.define('PlateCount', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
     field: 'return_per_plate',
-    defaultValue: 4500,
-    comment: 'Dikembalikan ke pabrik per piring (Rp 4.500)',
+    defaultValue: 2500,
+    comment: 'Dikembalikan ke pabrik per piring (Rp 2.500)',
   },
   taxPercentage: {
     type: DataTypes.DECIMAL(5, 2),
@@ -55,7 +68,15 @@ const PlateCount = sequelize.define('PlateCount', {
     defaultValue: 2.00,
     comment: 'Persentase pajak (2%)',
   },
-  // Calculated fields (stored for reporting purposes)
+  
+  // Total combined
+  totalPlates: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    field: 'total_plates',
+    comment: 'Total piring (SGP + Hirose)',
+  },
   totalTransfer: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
@@ -63,48 +84,121 @@ const PlateCount = sequelize.define('PlateCount', {
     defaultValue: 0,
     comment: 'Total transfer dari pabrik',
   },
-  grossIncome: {
+  
+  // SGP calculated fields
+  sgpGrossIncome: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
-    field: 'gross_income',
+    field: 'sgp_gross_income',
     defaultValue: 0,
-    comment: 'Penghasilan kotor (sebelum pajak)',
   },
-  incomeTax: {
+  sgpIncomeTax: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
-    field: 'income_tax',
+    field: 'sgp_income_tax',
     defaultValue: 0,
-    comment: 'Pajak dari penghasilan',
   },
-  netIncome: {
+  sgpNetIncome: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
-    field: 'net_income',
+    field: 'sgp_net_income',
     defaultValue: 0,
-    comment: 'Penghasilan bersih (setelah pajak)',
   },
-  grossReturn: {
+  sgpGrossReturn: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
-    field: 'gross_return',
+    field: 'sgp_gross_return',
     defaultValue: 0,
-    comment: 'Pengembalian kotor (sebelum pajak)',
   },
-  returnTax: {
+  sgpReturnTax: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
-    field: 'return_tax',
+    field: 'sgp_return_tax',
     defaultValue: 0,
-    comment: 'Pajak dari pengembalian',
   },
-  netReturn: {
+  sgpNetReturn: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
-    field: 'net_return',
+    field: 'sgp_net_return',
     defaultValue: 0,
-    comment: 'Pengembalian bersih (setelah pajak)',
   },
+  
+  // Hirose calculated fields
+  hiroseGrossIncome: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'hirose_gross_income',
+    defaultValue: 0,
+  },
+  hiroseIncomeTax: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'hirose_income_tax',
+    defaultValue: 0,
+  },
+  hiroseNetIncome: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'hirose_net_income',
+    defaultValue: 0,
+  },
+  hiroseGrossReturn: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'hirose_gross_return',
+    defaultValue: 0,
+  },
+  hiroseReturnTax: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'hirose_return_tax',
+    defaultValue: 0,
+  },
+  hiroseNetReturn: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'hirose_net_return',
+    defaultValue: 0,
+  },
+  
+  // Combined totals
+  totalGrossIncome: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'total_gross_income',
+    defaultValue: 0,
+  },
+  totalIncomeTax: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'total_income_tax',
+    defaultValue: 0,
+  },
+  totalNetIncome: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'total_net_income',
+    defaultValue: 0,
+  },
+  totalGrossReturn: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'total_gross_return',
+    defaultValue: 0,
+  },
+  totalReturnTax: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'total_return_tax',
+    defaultValue: 0,
+  },
+  totalNetReturn: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    field: 'total_net_return',
+    defaultValue: 0,
+  },
+  
   notes: {
     type: DataTypes.TEXT,
     allowNull: true,
@@ -128,31 +222,54 @@ const PlateCount = sequelize.define('PlateCount', {
     { fields: ['date'] },
     { fields: ['shift'] },
     { fields: ['user_id'] },
-    { fields: ['date', 'shift'], unique: true }, // Unique per tanggal dan shift
+    { fields: ['date', 'shift'], unique: true },
   ],
   hooks: {
     beforeValidate: (plateCount) => {
-      // Calculate all values before saving
-      const count = parseInt(plateCount.plateCount) || 0;
-      const pricePerPlate = parseFloat(plateCount.pricePerPlate) || 11500;
-      const incomePerPlate = parseFloat(plateCount.incomePerPlate) || 7000;
-      const returnPerPlate = parseFloat(plateCount.returnPerPlate) || 4500;
-      const taxPercentage = parseFloat(plateCount.taxPercentage) || 2;
-
-      // Total transfer dari pabrik
-      plateCount.totalTransfer = count * pricePerPlate;
-
-      // Penghasilan
-      plateCount.grossIncome = count * incomePerPlate;
-      plateCount.incomeTax = plateCount.grossIncome * (taxPercentage / 100);
-      plateCount.netIncome = plateCount.grossIncome - plateCount.incomeTax;
-
-      // Pengembalian
-      plateCount.grossReturn = count * returnPerPlate;
-      plateCount.returnTax = plateCount.grossReturn * (taxPercentage / 100);
-      plateCount.netReturn = plateCount.grossReturn - plateCount.returnTax;
+      calculateFields(plateCount);
+    },
+    beforeUpdate: (plateCount) => {
+      calculateFields(plateCount);
     },
   },
 });
+
+// Helper function for calculation
+function calculateFields(plateCount) {
+  const sgpCount = parseInt(plateCount.sgpCount) || 0;
+  const hiroseCount = parseInt(plateCount.hiroseCount) || 0;
+  const pricePerPlate = parseFloat(plateCount.pricePerPlate) || 9500;
+  const incomePerPlate = parseFloat(plateCount.incomePerPlate) || 7000;
+  const returnPerPlate = parseFloat(plateCount.returnPerPlate) || 2500;
+  const taxPercentage = parseFloat(plateCount.taxPercentage) || 2;
+  
+  // Total plates
+  plateCount.totalPlates = sgpCount + hiroseCount;
+  plateCount.totalTransfer = plateCount.totalPlates * pricePerPlate;
+  
+  // SGP calculations
+  plateCount.sgpGrossIncome = sgpCount * incomePerPlate;
+  plateCount.sgpIncomeTax = plateCount.sgpGrossIncome * (taxPercentage / 100);
+  plateCount.sgpNetIncome = plateCount.sgpGrossIncome - plateCount.sgpIncomeTax;
+  plateCount.sgpGrossReturn = sgpCount * returnPerPlate;
+  plateCount.sgpReturnTax = plateCount.sgpGrossReturn * (taxPercentage / 100);
+  plateCount.sgpNetReturn = plateCount.sgpGrossReturn - plateCount.sgpReturnTax;
+  
+  // Hirose calculations
+  plateCount.hiroseGrossIncome = hiroseCount * incomePerPlate;
+  plateCount.hiroseIncomeTax = plateCount.hiroseGrossIncome * (taxPercentage / 100);
+  plateCount.hiroseNetIncome = plateCount.hiroseGrossIncome - plateCount.hiroseIncomeTax;
+  plateCount.hiroseGrossReturn = hiroseCount * returnPerPlate;
+  plateCount.hiroseReturnTax = plateCount.hiroseGrossReturn * (taxPercentage / 100);
+  plateCount.hiroseNetReturn = plateCount.hiroseGrossReturn - plateCount.hiroseReturnTax;
+  
+  // Combined totals
+  plateCount.totalGrossIncome = plateCount.sgpGrossIncome + plateCount.hiroseGrossIncome;
+  plateCount.totalIncomeTax = plateCount.sgpIncomeTax + plateCount.hiroseIncomeTax;
+  plateCount.totalNetIncome = plateCount.sgpNetIncome + plateCount.hiroseNetIncome;
+  plateCount.totalGrossReturn = plateCount.sgpGrossReturn + plateCount.hiroseGrossReturn;
+  plateCount.totalReturnTax = plateCount.sgpReturnTax + plateCount.hiroseReturnTax;
+  plateCount.totalNetReturn = plateCount.sgpNetReturn + plateCount.hiroseNetReturn;
+}
 
 module.exports = PlateCount;

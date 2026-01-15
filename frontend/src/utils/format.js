@@ -125,3 +125,32 @@ export const parseNumber = (value) => {
   }
   return 0
 }
+
+/**
+ * Format tanggal lengkap dengan hari
+ * Contoh: "Senin, 12 Januari 2026"
+ */
+export const formatDateFull = (date) => {
+  if (!date) return '-'
+
+  return new Date(date).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })
+}
+
+/**
+ * Format waktu saja
+ * Contoh: "14:30"
+ */
+export const formatTime = (date) => {
+  if (!date) return '-'
+
+  return new Date(date).toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+}

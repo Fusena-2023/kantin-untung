@@ -1,616 +1,634 @@
 <template>
   <q-page padding>
-    <div class="row items-center q-mb-md">
-      <div class="col">
-        <h5 class="q-my-none">Input Jumlah Piring</h5>
-        <p class="text-grey-7 q-mb-none">Catat jumlah piring yang dimakan per shift</p>
+    <div class="q-gutter-y-md">
+      <!-- Header -->
+      <div class="row items-center justify-between">
+        <div>
+          <h5 class="q-my-none">Jumlah Piring</h5>
+          <p class="text-grey q-my-none">Pencatatan jumlah piring per shift</p>
+        </div>
+        <q-btn
+          color="primary"
+          icon="add"
+          label="Input Data"
+          @click="openInputDialog()"
+        />
       </div>
-    </div>
 
-    <!-- Period Summary -->
-    <q-card class="q-mb-md">
-      <q-card-section>
-        <div class="row items-center justify-between q-mb-md">
-          <div class="text-h6">
-            <q-icon name="analytics" class="q-mr-sm" />
-            Ringkasan
-          </div>
-          <div class="row q-gutter-sm items-center" v-if="isPemilik">
-            <q-btn-toggle
-              v-model="summaryPeriod"
-              toggle-color="primary"
-              :options="periodOptions"
-              unelevated
-              rounded
-              dense
-              @update:model-value="fetchPeriodSummary"
-            />
-            <template v-if="summaryPeriod === 'custom'">
+      <!-- Period Summary Cards (hanya untuk pemilik) -->
+      <div v-if="isPemilik">
+        <!-- Date Range Selector -->
+        <q-card flat bordered class="q-mb-md">
+          <q-card-section class="q-py-sm">
+            <div class="row items-center q-gutter-sm">
+              <!-- Quick Week Selector -->
+              <q-btn-dropdown
+                color="primary"
+                :label="'Minggu ' + selectedWeekNumber"
+                dense
+                outline
+              >
+                <q-list>
+                  <q-item clickable v-close-popup @click="selectWeek(0)">
+                    <q-item-section>
+                      <q-item-label>Minggu Ini</q-item-label>
+                      <q-item-label caption>{{ getWeekDateRange(0) }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="selectWeek(-1)">
+                    <q-item-section>
+                      <q-item-label>Minggu Lalu</q-item-label>
+                      <q-item-label caption>{{ getWeekDateRange(-1) }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="selectWeek(-2)">
+                    <q-item-section>
+                      <q-item-label>2 Minggu Lalu</q-item-label>
+                      <q-item-label caption>{{ getWeekDateRange(-2) }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="selectWeek(-3)">
+                    <q-item-section>
+                      <q-item-label>3 Minggu Lalu</q-item-label>
+                      <q-item-label caption>{{ getWeekDateRange(-3) }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
+
+              <span class="text-grey-5">|</span>
+
+              <!-- Manual Date Range -->
               <q-input
                 v-model="customStartDate"
                 type="date"
+                label="Dari (Senin)"
                 dense
                 outlined
-                label="Dari"
-                style="width: 140px"
+                style="width: 160px"
+                @update:model-value="fetchPeriodSummary"
               />
               <q-input
                 v-model="customEndDate"
                 type="date"
+                label="Sampai (Minggu)"
                 dense
                 outlined
-                label="Sampai"
-                style="width: 140px"
+                style="width: 160px"
+                @update:model-value="fetchPeriodSummary"
               />
+
+              <q-space />
+
+              <!-- Refresh Button & Auto-refresh Toggle -->
               <q-btn
-                color="primary"
-                icon="search"
+                flat
+                round
                 dense
-                @click="fetchPeriodSummary"
-              />
-            </template>
-          </div>
-        </div>
-
-        <!-- Period Label - Only for Pemilik -->
-        <div class="text-subtitle1 text-grey-7 q-mb-md" v-if="isPemilik">
-          <q-icon name="date_range" class="q-mr-xs" />
-          {{ periodLabel }}
-        </div>
-
-        <!-- Summary Cards - Pemilik -->
-        <div class="row q-col-gutter-md" v-if="periodSummary && isPemilik">
-          <div class="col-12 col-sm-6 col-md-2">
-            <q-card flat bordered class="bg-blue-1">
-              <q-card-section class="text-center">
-                <div class="text-h4 text-primary">{{ periodSummary.totalPlates }}</div>
-                <div class="text-grey-7">Total Piring</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-12 col-sm-6 col-md-2">
-            <q-card flat bordered class="bg-cyan-1">
-              <q-card-section class="text-center">
-                <div class="text-h6 text-cyan-9">{{ formatCurrency(periodSummary.totalTransfer) }}</div>
-                <div class="text-grey-7">Transfer Pabrik</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-12 col-sm-6 col-md-2">
-            <q-card flat bordered class="bg-green-1">
-              <q-card-section class="text-center">
-                <div class="text-h6 text-positive">{{ formatCurrency(periodSummary.netIncome) }}</div>
-                <div class="text-grey-7">Penghasilan Bersih</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-12 col-sm-6 col-md-2">
-            <q-card flat bordered class="bg-orange-1">
-              <q-card-section class="text-center">
-                <div class="text-h6 text-warning">{{ formatCurrency(periodSummary.netReturn) }}</div>
-                <div class="text-grey-7">Dikembalikan</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-12 col-sm-6 col-md-2">
-            <q-card flat bordered class="bg-red-1">
-              <q-card-section class="text-center">
-                <div class="text-h6 text-negative">{{ formatCurrency(periodSummary.totalTax) }}</div>
-                <div class="text-grey-7">Total Pajak</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-12 col-sm-6 col-md-2">
-            <q-card flat bordered class="bg-purple-1">
-              <q-card-section class="text-center">
-                <div class="text-h6 text-purple-9">{{ periodSummary.recordCount }}</div>
-                <div class="text-grey-7">Jumlah Data</div>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-
-        <!-- Summary Cards - Pegawai (Simplified) -->
-        <div class="row q-col-gutter-md" v-if="periodSummary && !isPemilik">
-          <div class="col-6">
-            <q-card flat bordered class="bg-blue-1">
-              <q-card-section class="text-center">
-                <div class="text-h4 text-primary">{{ periodSummary.totalPlates }}</div>
-                <div class="text-grey-7">Total Piring</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-6">
-            <q-card flat bordered class="bg-purple-1">
-              <q-card-section class="text-center">
-                <div class="text-h4 text-purple-9">{{ periodSummary.recordCount }}</div>
-                <div class="text-grey-7">Jumlah Data</div>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-
-        <!-- Daily Breakdown Table - Only for Pemilik -->
-        <div v-if="isPemilik && periodSummary && periodSummary.dailyBreakdown && periodSummary.dailyBreakdown.length > 0" class="q-mt-md">
-          <q-expansion-item
-            icon="table_chart"
-            label="Detail Per Hari"
-            :caption="`${periodSummary.dailyBreakdown.length} hari`"
-            header-class="text-primary"
-          >
-            <q-table
-              :rows="periodSummary.dailyBreakdown"
-              :columns="breakdownColumns"
-              row-key="date"
-              dense
-              flat
-              bordered
-              :pagination="{ rowsPerPage: 10 }"
-            >
-              <template v-slot:body-cell-date="props">
-                <q-td :props="props">
-                  {{ formatDateShort(props.row.date) }}
-                </q-td>
-              </template>
-              <template v-slot:body-cell-shifts="props">
-                <q-td :props="props">
-                  <q-chip v-if="props.row.shifts.siang" size="sm" color="orange" text-color="white">
-                    S: {{ props.row.shifts.siang.plateCount }}
-                  </q-chip>
-                  <q-chip v-if="props.row.shifts.malam" size="sm" color="indigo" text-color="white">
-                    M: {{ props.row.shifts.malam.plateCount }}
-                  </q-chip>
-                </q-td>
-              </template>
-              <template v-slot:body-cell-netIncome="props">
-                <q-td :props="props" class="text-positive">
-                  {{ formatCurrency(props.row.netIncome) }}
-                </q-td>
-              </template>
-              <template v-slot:body-cell-netReturn="props">
-                <q-td :props="props" class="text-warning">
-                  {{ formatCurrency(props.row.netReturn) }}
-                </q-td>
-              </template>
-            </q-table>
-          </q-expansion-item>
-        </div>
-
-        <div v-if="!periodSummary || periodSummary.recordCount === 0" class="text-center text-grey-6 q-pa-lg">
-          <q-icon name="inbox" size="48px" class="q-mb-sm" />
-          <div>Tidak ada data untuk periode ini</div>
-        </div>
-      </q-card-section>
-    </q-card>
-
-    <!-- History Table -->
-    <q-card>
-      <q-card-section>
-        <div class="row items-center justify-between q-mb-md">
-          <div class="text-h6">
-            <q-icon name="history" class="q-mr-sm" />
-            Riwayat
-          </div>
-          <div class="row q-gutter-sm">
-            <q-input
-              v-model="filterDate"
-              type="date"
-              dense
-              outlined
-              label="Filter Tanggal"
-              @update:model-value="fetchData"
-            />
-            <q-select
-              v-model="filterShift"
-              :options="shiftOptions"
-              dense
-              outlined
-              emit-value
-              map-options
-              label="Shift"
-              style="min-width: 120px"
-              @update:model-value="fetchData"
-            />
-            <q-btn
-              color="primary"
-              icon="add"
-              label="Input Baru"
-              @click="openInputDialog()"
-            />
-          </div>
-        </div>
-
-        <q-table
-          :rows="plateCounts"
-          :columns="columns"
-          row-key="id"
-          :loading="loading"
-          :pagination="pagination"
-          @request="onRequest"
-        >
-          <template v-slot:body-cell-shift="props">
-            <q-td :props="props">
-              <q-chip
-                :color="props.row.shift === 'siang' ? 'orange' : 'indigo'"
-                text-color="white"
+                icon="refresh"
+                color="primary"
+                :loading="loading"
+                @click="refreshAllData"
+              >
+                <q-tooltip>Refresh Data</q-tooltip>
+              </q-btn>
+              <q-toggle
+                v-model="autoRefresh"
+                label="Auto"
+                dense
                 size="sm"
-              >
-                <q-icon
-                  :name="props.row.shift === 'siang' ? 'wb_sunny' : 'nights_stay'"
-                  class="q-mr-xs"
-                />
-                {{ props.row.shift === 'siang' ? 'Siang' : 'Malam' }}
-              </q-chip>
-            </q-td>
-          </template>
-
-          <template v-slot:body-cell-netIncome="props">
-            <q-td :props="props">
-              <span class="text-positive text-weight-medium">
-                {{ formatCurrency(props.row.netIncome) }}
-              </span>
-            </q-td>
-          </template>
-
-          <template v-slot:body-cell-netReturn="props">
-            <q-td :props="props">
-              <span class="text-warning text-weight-medium">
-                {{ formatCurrency(props.row.netReturn) }}
-              </span>
-            </q-td>
-          </template>
-
-          <template v-slot:body-cell-actions="props">
-            <q-td :props="props">
-              <q-btn
-                flat
-                round
-                dense
-                icon="edit"
                 color="primary"
-                @click="openEditDialog(props.row.id)"
               >
-                <q-tooltip>Edit</q-tooltip>
-              </q-btn>
-              <q-btn
-                v-if="isPemilik"
-                flat
-                round
+                <q-tooltip>Auto refresh setiap 30 detik</q-tooltip>
+              </q-toggle>
+              <span v-if="autoRefresh" class="text-caption text-grey-6">
+                ({{ autoRefreshCountdown }}s)
+              </span>
+            </div>
+          </q-card-section>
+        </q-card>
+
+        <!-- Summary Cards -->
+        <div class="row q-col-gutter-md q-mb-sm">
+          <div class="col-12 col-md-4">
+            <q-card flat bordered class="bg-blue-1">
+              <q-card-section>
+                <div class="text-subtitle2 text-grey-7">Total Piring</div>
+                <div class="text-h5 text-primary">
+                  {{ periodSummary.totalPlates?.toLocaleString('id-ID') || 0 }}
+                </div>
+                <div class="text-caption text-grey-6">
+                  SGP: {{ periodSummary.totalSgpCount?.toLocaleString('id-ID') || 0 }} |
+                  Hirose: {{ periodSummary.totalHiroseCount?.toLocaleString('id-ID') || 0 }}
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <q-card flat bordered class="bg-green-1">
+              <q-card-section>
+                <div class="text-subtitle2 text-grey-7">Nilai Piring</div>
+                <div class="text-h5 text-positive">
+                  {{ formatCurrency(periodSummary.totalTransfer || 0) }}
+                </div>
+                <div class="text-caption text-grey-6">
+                  {{ periodSummary.recordCount || 0 }} data
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <q-card flat bordered class="bg-teal-1">
+              <q-card-section>
+                <div class="text-subtitle2 text-grey-7">Penghasilan Kotor</div>
+                <div class="text-h5 text-teal">
+                  {{ formatCurrency(periodSummary.totalNetIncome || 0) }}
+                </div>
+                <div class="text-caption text-grey-6">
+                  Pajak: {{ formatCurrency(periodSummary.totalIncomeTax || 0) }}
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+
+        <!-- PENGEMBALIAN BERSIH - Card Utama -->
+        <div class="row q-col-gutter-md q-mb-sm">
+          <div class="col-12 col-md-8 offset-md-2">
+            <q-card class="bg-orange-2" style="border: 2px solid #FB8C00;">
+              <q-card-section class="text-center q-py-md">
+                <q-icon name="savings" size="28px" color="orange-9" class="q-mb-xs" />
+                <div class="text-subtitle2 text-orange-9 text-weight-medium">PENGEMBALIAN BERSIH</div>
+                <div class="text-h4 text-orange-10 text-weight-bold">
+                  {{ formatCurrency(periodSummary.totalNetReturn || 0) }}
+                </div>
+                <div class="text-caption text-orange-8">
+                  Pajak: {{ formatCurrency(periodSummary.totalReturnTax || 0) }}
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+
+        <!-- Admin Fee and Final Income -->
+        <div class="row q-col-gutter-md q-mb-md">
+          <div class="col-12 col-md-4">
+            <q-card flat bordered class="bg-red-1">
+              <q-card-section>
+                <div class="text-subtitle2 text-grey-7">Admin Transfer Bank</div>
+                <div class="text-h5 text-negative">
+                  - {{ formatCurrency(periodSummary.totalAdminFee || 0) }}
+                </div>
+                <div class="text-caption text-grey-6">
+                  {{ periodSummary.weekCount || 0 }} minggu × Rp 2.900
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <q-card flat bordered class="bg-cyan-1">
+              <q-card-section>
+                <div class="text-subtitle2 text-grey-7">Jumlah Ditransfer Pabrik</div>
+                <div class="text-h5 text-cyan text-weight-bold">
+                  {{ formatCurrency(amountFromFactory) }}
+                </div>
+                <div class="text-caption text-grey-6">
+                  Transfer - Pajak - Admin
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <q-card flat bordered class="bg-light-green-2">
+              <q-card-section>
+                <div class="text-subtitle1 text-grey-7">Penghasilan Bersih Final</div>
+                <div class="text-h4 text-positive text-weight-bold">
+                  {{ formatCurrency(periodSummary.finalNetIncome || 0) }}
+                </div>
+                <div class="text-caption text-grey-6">
+                  Penghasilan kotor - Admin transfer bank
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter & Data Table -->
+      <q-card flat bordered>
+        <q-card-section>
+          <div class="row q-col-gutter-md q-mb-md">
+            <div class="col-12 col-md-4">
+              <q-input
+                v-model="filterDate"
+                type="date"
+                label="Filter Tanggal"
+                outlined
                 dense
-                icon="delete"
-                color="negative"
-                @click="confirmDelete(props.row)"
-              >
-                <q-tooltip>Hapus</q-tooltip>
-              </q-btn>
-            </q-td>
-          </template>
-        </q-table>
-      </q-card-section>
-    </q-card>
+                clearable
+                @update:model-value="fetchData"
+              />
+            </div>
+            <div class="col-12 col-md-4">
+              <q-select
+                v-model="filterShift"
+                :options="shiftOptions"
+                label="Filter Shift"
+                outlined
+                dense
+                clearable
+                emit-value
+                map-options
+                @update:model-value="fetchData"
+              />
+            </div>
+          </div>
+
+          <q-table
+            :rows="groupedPlateCounts"
+            :columns="columns"
+            row-key="id"
+            :loading="loading"
+            :pagination="pagination"
+            @request="onRequest"
+            flat
+            bordered
+            hide-header
+          >
+            <!-- Custom header -->
+            <template #top-row>
+              <q-tr class="bg-grey-2">
+                <q-th class="text-left">Tanggal</q-th>
+                <q-th class="text-center">Shift</q-th>
+                <q-th class="text-center">SGP</q-th>
+                <q-th class="text-center">Hirose</q-th>
+                <q-th class="text-center">Total</q-th>
+                <q-th v-if="isPemilik" class="text-right">Transfer</q-th>
+                <q-th v-if="isPemilik" class="text-right">Penghasilan</q-th>
+                <q-th v-if="isPemilik" class="text-right">Pengembalian</q-th>
+                <q-th class="text-center">Aksi</q-th>
+              </q-tr>
+            </template>
+
+            <template #body="props">
+              <!-- Date Group Header -->
+              <q-tr v-if="props.row.isGroupHeader" class="bg-blue-1">
+                <q-td :colspan="isPemilik ? 9 : 6" class="text-weight-bold">
+                  <q-icon name="event" class="q-mr-sm" />
+                  {{ formatDate(props.row.date) }}
+                  <q-badge color="primary" class="q-ml-sm">
+                    {{ props.row.totalPlates }} piring
+                  </q-badge>
+                </q-td>
+              </q-tr>
+
+              <!-- Data Row -->
+              <q-tr v-else :props="props">
+                <q-td class="text-grey-6 text-caption">
+                  <!-- Empty for grouped look -->
+                </q-td>
+                <q-td class="text-center">
+                  <q-chip
+                    :color="getShiftColor(props.row.shift)"
+                    text-color="white"
+                    dense
+                    :icon="getShiftIcon(props.row.shift)"
+                  >
+                    {{ getShiftLabel(props.row.shift) }}
+                  </q-chip>
+                </q-td>
+                <q-td class="text-center">
+                  <span class="text-weight-medium text-blue">
+                    {{ props.row.sgpCount?.toLocaleString('id-ID') || 0 }}
+                  </span>
+                </q-td>
+                <q-td class="text-center">
+                  <span class="text-weight-medium text-purple">
+                    {{ props.row.hiroseCount?.toLocaleString('id-ID') || 0 }}
+                  </span>
+                </q-td>
+                <q-td class="text-center">
+                  <span class="text-weight-bold text-primary">
+                    {{ props.row.totalPlates?.toLocaleString('id-ID') || 0 }}
+                  </span>
+                </q-td>
+                <q-td v-if="isPemilik" class="text-right">
+                  <span class="text-positive">
+                    {{ formatCurrency(props.row.totalTransfer) }}
+                  </span>
+                </q-td>
+                <q-td v-if="isPemilik" class="text-right">
+                  <span class="text-teal">
+                    {{ formatCurrency(props.row.totalNetIncome) }}
+                  </span>
+                </q-td>
+                <q-td v-if="isPemilik" class="text-right">
+                  <span class="text-orange">
+                    {{ formatCurrency(props.row.totalNetReturn) }}
+                  </span>
+                </q-td>
+                <q-td class="text-center">
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    icon="edit"
+                    color="primary"
+                    @click="openEditDialog(props.row.id)"
+                  >
+                    <q-tooltip>Edit</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    v-if="isPemilik"
+                    flat
+                    round
+                    dense
+                    icon="delete"
+                    color="negative"
+                    @click="confirmDelete(props.row)"
+                  >
+                    <q-tooltip>Hapus</q-tooltip>
+                  </q-btn>
+                </q-td>
+              </q-tr>
+            </template>
+          </q-table>
+        </q-card-section>
+      </q-card>
+    </div>
 
     <!-- Input/Edit Dialog -->
     <q-dialog v-model="showDialog" persistent>
-      <q-card style="width: 420px; max-width: 95vw">
-        <q-card-section class="q-pb-none">
-          <div class="row items-center">
-            <q-icon name="restaurant" size="sm" color="primary" class="q-mr-sm" />
-            <span class="text-subtitle1 text-weight-medium">
-              {{ isEditing ? 'Edit Data Piring' : 'Input Jumlah Piring' }}
-            </span>
-            <q-space />
-            <q-btn icon="close" flat round dense size="sm" v-close-popup />
-          </div>
+      <q-card style="width: 520px; max-width: 95vw;">
+        <q-card-section class="row items-center q-pb-sm">
+          <div class="text-h6">{{ isEditing ? 'Edit Data' : 'Input Data Baru' }}</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-pt-md q-pb-sm">
-          <q-form @submit.prevent="saveData">
-            <!-- Row 1: Tanggal & Shift -->
-            <div class="row q-col-gutter-sm q-mb-sm">
-              <div class="col-7">
-                <q-input
-                  v-model="form.date"
-                  type="date"
-                  label="Tanggal *"
-                  outlined
-                  dense
-                  :rules="[val => !!val || 'Tanggal wajib diisi']"
-                />
-              </div>
-              <div class="col-5">
-                <q-select
-                  v-model="form.shift"
-                  :options="[
-                    { label: 'Siang', value: 'siang' },
-                    { label: 'Malam', value: 'malam' }
-                  ]"
-                  label="Shift *"
-                  outlined
-                  dense
-                  emit-value
-                  map-options
-                  :rules="[val => !!val || 'Shift wajib dipilih']"
-                />
+        <q-separator />
+
+        <q-card-section>
+          <q-form @submit.prevent="saveData" class="q-gutter-sm">
+            <q-input
+              v-model="form.date"
+              type="date"
+              label="Tanggal *"
+              outlined
+              dense
+              :rules="[val => !!val || 'Tanggal wajib diisi']"
+            />
+
+            <q-select
+              v-model="form.shift"
+              :options="shiftOptions"
+              label="Shift *"
+              outlined
+              dense
+              emit-value
+              map-options
+              :rules="[val => !!val || 'Shift wajib dipilih']"
+            />
+
+            <!-- Input Jumlah Piring -->
+            <div>
+              <div class="text-subtitle2 text-grey-7 q-mb-xs">Jumlah Piring</div>
+              <div class="row q-col-gutter-sm">
+                <div class="col-6">
+                  <q-input
+                    v-model.number="form.sgpCount"
+                    type="number"
+                    label="SGP"
+                    outlined
+                    dense
+                    min="0"
+                    :rules="[val => val >= 0 || 'Tidak boleh negatif']"
+                  >
+                    <template #prepend>
+                      <q-icon name="restaurant" color="blue" />
+                    </template>
+                  </q-input>
+                </div>
+                <div class="col-6">
+                  <q-input
+                    v-model.number="form.hiroseCount"
+                    type="number"
+                    label="Hirose"
+                    outlined
+                    dense
+                    min="0"
+                    :rules="[val => val >= 0 || 'Tidak boleh negatif']"
+                  >
+                    <template #prepend>
+                      <q-icon name="restaurant" color="purple" />
+                    </template>
+                  </q-input>
+                </div>
               </div>
             </div>
 
-            <!-- Row 2: Jumlah Piring -->
-            <q-input
-              v-model.number="form.plateCount"
-              type="number"
-              label="Jumlah Piring *"
-              outlined
-              dense
-              min="0"
-              input-class="text-right text-weight-medium"
-              class="q-mb-sm"
-              :rules="[
-                val => (val !== null && val !== '') || 'Jumlah piring wajib diisi',
-                val => val >= 0 || 'Jumlah tidak boleh negatif'
-              ]"
-            >
-              <template v-slot:append>
-                <span class="text-grey-6 text-body2">piring</span>
-              </template>
-            </q-input>
-
-            <!-- Row 3: Catatan -->
-            <q-input
-              v-model="form.notes"
-              type="textarea"
-              label="Catatan (opsional)"
-              outlined
-              dense
-              rows="2"
-              autogrow
-              class="q-mb-sm"
-            />
-
-            <!-- Price Configuration (Collapsible) - Only for Pemilik -->
+            <!-- Pengaturan Harga (expandable) - hanya untuk pemilik -->
             <q-expansion-item
               v-if="isPemilik"
-              dense
-              dense-toggle
-              icon="tune"
+              v-model="showPriceSettings"
+              icon="settings"
               label="Pengaturan Harga"
-              header-class="text-grey-8 text-caption"
-              class="bg-grey-1 rounded-borders q-mb-sm"
+              caption="Klik untuk mengubah harga default"
+              header-class="text-grey-8"
+              dense
             >
-              <div class="q-pa-sm q-gutter-xs">
-                <div class="row q-col-gutter-xs">
-                  <div class="col-6">
-                    <q-input
-                      v-model.number="form.pricePerPlate"
-                      type="number"
-                      label="Harga/Piring"
-                      outlined
-                      dense
-                      prefix="Rp"
-                    />
+              <q-card flat bordered class="q-mt-sm">
+                <q-card-section class="q-py-md">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-6">
+                      <q-input
+                        v-model.number="form.pricePerPlate"
+                        type="number"
+                        label="Harga per Piring (dari Pabrik)"
+                        outlined
+                        dense
+                        prefix="Rp"
+                        :rules="[val => val > 0 || 'Harus lebih dari 0']"
+                      />
+                    </div>
+                    <div class="col-6">
+                      <q-input
+                        v-model.number="form.taxPercentage"
+                        type="number"
+                        label="Pajak (%)"
+                        outlined
+                        dense
+                        suffix="%"
+                        :rules="[val => val >= 0 || 'Tidak boleh negatif']"
+                      />
+                    </div>
+                    <div class="col-6">
+                      <q-input
+                        v-model.number="form.incomePerPlate"
+                        type="number"
+                        label="Penghasilan per Piring"
+                        outlined
+                        dense
+                        prefix="Rp"
+                        :rules="[val => val > 0 || 'Harus lebih dari 0']"
+                      />
+                    </div>
+                    <div class="col-6">
+                      <q-input
+                        v-model.number="form.returnPerPlate"
+                        type="number"
+                        label="Pengembalian per Piring"
+                        outlined
+                        dense
+                        prefix="Rp"
+                        :rules="[val => val > 0 || 'Harus lebih dari 0']"
+                      />
+                    </div>
                   </div>
-                  <div class="col-6">
-                    <q-input
-                      v-model.number="form.incomePerPlate"
-                      type="number"
-                      label="Penghasilan/Piring"
-                      outlined
-                      dense
-                      prefix="Rp"
-                    />
+                  <div class="text-caption text-grey-6 q-mt-sm">
+                    Default: Harga Rp 9.500 = Penghasilan Rp 7.000 + Pengembalian Rp 2.500
                   </div>
-                </div>
-                <div class="row q-col-gutter-xs">
-                  <div class="col-6">
-                    <q-input
-                      v-model.number="form.returnPerPlate"
-                      type="number"
-                      label="Dikembalikan/Piring"
-                      outlined
-                      dense
-                      prefix="Rp"
-                    />
-                  </div>
-                  <div class="col-6">
-                    <q-input
-                      v-model.number="form.taxPercentage"
-                      type="number"
-                      label="Pajak"
-                      outlined
-                      dense
-                      suffix="%"
-                      step="0.1"
-                    />
-                  </div>
-                </div>
-              </div>
+                </q-card-section>
+              </q-card>
             </q-expansion-item>
+
+            <!-- Preview Kalkulasi (hanya untuk pemilik) -->
+            <q-card v-if="isPemilik" flat bordered class="bg-grey-1">
+              <q-card-section class="q-py-sm">
+                <div class="text-subtitle2 q-mb-sm">Preview Kalkulasi</div>
+
+                <div class="row q-col-gutter-sm text-body2">
+                  <div class="col-6">
+                    <div class="text-grey-7">Total Piring:</div>
+                    <div class="text-weight-bold text-primary">
+                      {{ totalPlatesPreview.toLocaleString('id-ID') }}
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="text-grey-7">Nilai Piring:</div>
+                    <div class="text-weight-bold text-positive">
+                      {{ formatCurrency(totalTransferPreview) }}
+                    </div>
+                  </div>
+                </div>
+
+                <q-separator class="q-my-sm" />
+
+                <!-- SGP -->
+                <div class="text-caption text-blue q-mb-xs">SGP ({{ form.sgpCount }} piring)</div>
+                <div class="row q-col-gutter-xs text-caption">
+                  <div class="col-6">Penghasilan: {{ formatCurrency(sgpIncomePreview) }}</div>
+                  <div class="col-6">Pengembalian: {{ formatCurrency(sgpReturnPreview) }}</div>
+                </div>
+
+                <!-- Hirose -->
+                <div class="text-caption text-purple q-mt-sm q-mb-xs">Hirose ({{ form.hiroseCount }} piring)</div>
+                <div class="row q-col-gutter-xs text-caption">
+                  <div class="col-6">Penghasilan: {{ formatCurrency(hiroseIncomePreview) }}</div>
+                  <div class="col-6">Pengembalian: {{ formatCurrency(hiroseReturnPreview) }}</div>
+                </div>
+
+                <q-separator class="q-my-sm" />
+
+                <div class="row q-col-gutter-sm text-body2">
+                  <div class="col-6">
+                    <div class="text-grey-7">Total Penghasilan Bersih:</div>
+                    <div class="text-weight-bold text-teal">
+                      {{ formatCurrency(totalNetIncomePreview) }}
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="text-grey-7">Total Pengembalian Bersih:</div>
+                    <div class="text-weight-bold text-orange">
+                      {{ formatCurrency(totalNetReturnPreview) }}
+                    </div>
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+
+            <div class="row justify-end q-gutter-sm q-mt-md">
+              <q-btn label="Batal" flat v-close-popup />
+              <q-btn
+                type="submit"
+                label="Simpan"
+                color="primary"
+                :loading="saving"
+              />
+            </div>
           </q-form>
         </q-card-section>
-
-        <!-- Preview Calculation - Only for Pemilik -->
-        <q-card-section v-if="isPemilik" class="bg-blue-1 q-py-sm">
-          <div class="text-caption text-weight-medium text-grey-8 q-mb-xs">
-            <q-icon name="calculate" size="xs" class="q-mr-xs" />
-            Pratinjau Perhitungan
-          </div>
-          <div class="row q-col-gutter-xs text-caption">
-            <div class="col-6">
-              <div class="text-grey-7">Transfer Pabrik</div>
-              <div class="text-weight-medium">{{ formatCurrency(preview.totalTransfer) }}</div>
-            </div>
-            <div class="col-6">
-              <div class="text-grey-7">Pajak ({{ form.taxPercentage }}%)</div>
-              <div class="text-weight-medium text-negative">-{{ formatCurrency(preview.totalTax) }}</div>
-            </div>
-          </div>
-          <q-separator class="q-my-xs" />
-          <div class="row q-col-gutter-xs text-caption">
-            <div class="col-6">
-              <div class="text-grey-7">Penghasilan Bersih</div>
-              <div class="text-weight-bold text-positive">{{ formatCurrency(preview.netIncome) }}</div>
-            </div>
-            <div class="col-6">
-              <div class="text-grey-7">Pengembalian Bersih</div>
-              <div class="text-weight-bold text-orange-8">{{ formatCurrency(preview.netReturn) }}</div>
-            </div>
-          </div>
-          <q-separator class="q-my-xs" />
-          <div class="row items-center justify-between">
-            <div>
-              <span class="text-caption text-grey-7">Total Bersih:</span>
-              <span class="text-weight-bold text-primary q-ml-xs">{{ formatCurrency(preview.totalAfterTax) }}</span>
-            </div>
-            <q-icon
-              :name="preview.verification ? 'check_circle' : 'error'"
-              :color="preview.verification ? 'positive' : 'negative'"
-              size="xs"
-            />
-          </div>
-        </q-card-section>
-
-        <q-card-actions class="q-px-md q-py-sm bg-grey-2">
-          <q-space />
-          <q-btn flat dense label="Batal" color="grey-7" v-close-popup class="q-px-md" />
-          <q-btn
-            unelevated
-            dense
-            color="primary"
-            :label="isEditing ? 'Simpan' : 'Simpan'"
-            :loading="saving"
-            @click="saveData"
-            class="q-px-lg"
-          />
-        </q-card-actions>
       </q-card>
     </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { useAuthStore } from 'src/stores/auth-store'
+import { useAuthStore } from 'stores/auth-store'
 import plateCountService from 'src/services/plateCount'
 
 const $q = useQuasar()
 const authStore = useAuthStore()
 
-const isPemilik = computed(() => authStore.isPemilik)
+// Check if user is pemilik - comprehensive check
+const isPemilik = computed(() => {
+  const user = authStore.user
+  if (!user) return false
 
-// Data
-const plateCounts = ref([])
-const periodSummary = ref(null)
-const loading = ref(false)
-const saving = ref(false)
-const showDialog = ref(false)
-const isEditing = ref(false)
-const editingId = ref(null)
-
-// Period Summary
-const summaryPeriod = ref('weekly')
-const customStartDate = ref('')
-const customEndDate = ref('')
-const periodOptions = [
-  { label: 'Hari Ini', value: 'daily' },
-  { label: 'Minggu', value: 'weekly' },
-  { label: 'Bulan', value: 'monthly' },
-  { label: 'Tahun', value: 'yearly' },
-  { label: 'Custom', value: 'custom' }
-]
-
-
-// Filters
-const filterDate = ref('')
-const filterShift = ref(null)
-const shiftOptions = [
-  { label: 'Semua', value: null },
-  { label: 'Siang', value: 'siang' },
-  { label: 'Malam', value: 'malam' }
-]
-
-// Pagination
-const pagination = ref({
-  page: 1,
-  rowsPerPage: 10,
-  rowsNumber: 0
+  // Check multiple possible field names
+  return user.role === 1 ||
+         user.role === 'pemilik' ||
+         user.roleId === 1 ||
+         user.role_id === 1 ||
+         user.userRole?.name === 'pemilik' ||
+         authStore.isPemilik
 })
 
-// Form
-const defaultForm = {
-  date: new Date().toISOString().split('T')[0],
-  shift: 'siang',
-  plateCount: null,
-  pricePerPlate: 11500,
-  incomePerPlate: 7000,
-  returnPerPlate: 4500,
-  taxPercentage: 2,
-  notes: ''
+// Shift options
+const shiftOptions = [
+  { label: 'Shift 1', value: 'shift1' },
+  { label: 'Shift 2', value: 'shift2' },
+  { label: 'Tambahan S1', value: 'tambahan_s1' },
+  { label: 'Tambahan S2', value: 'tambahan_s2' }
+]
+
+// Helper functions
+function getShiftLabel(shift) {
+  const labels = {
+    shift1: 'Shift 1',
+    shift2: 'Shift 2',
+    tambahan_s1: 'Tambahan S1',
+    tambahan_s2: 'Tambahan S2'
+  }
+  return labels[shift] || shift
 }
 
-const form = ref({ ...defaultForm })
-
-// Table columns - computed based on role
-const columns = computed(() => {
-  const baseColumns = [
-    { name: 'date', label: 'Tanggal', field: 'date', sortable: true, format: val => formatDate(val) },
-    { name: 'shift', label: 'Shift', field: 'shift', sortable: true },
-    { name: 'plateCount', label: 'Jumlah Piring', field: 'plateCount', sortable: true }
-  ]
-
-  if (isPemilik.value) {
-    baseColumns.push(
-      { name: 'totalTransfer', label: 'Transfer', field: 'totalTransfer', format: val => formatCurrency(val) },
-      { name: 'netIncome', label: 'Penghasilan Bersih', field: 'netIncome' },
-      { name: 'netReturn', label: 'Dikembalikan', field: 'netReturn' }
-    )
+function getShiftColor(shift) {
+  const colors = {
+    shift1: 'blue',
+    shift2: 'green',
+    tambahan_s1: 'orange',
+    tambahan_s2: 'purple'
   }
+  return colors[shift] || 'grey'
+}
 
-  baseColumns.push({ name: 'actions', label: 'Aksi', field: 'actions', align: 'center' })
-  return baseColumns
-})
-
-// Breakdown table columns - only used by pemilik
-const breakdownColumns = [
-  { name: 'date', label: 'Tanggal', field: 'date', sortable: true },
-  { name: 'shifts', label: 'Shift', field: 'shifts' },
-  { name: 'totalPlates', label: 'Total Piring', field: 'totalPlates', sortable: true },
-  { name: 'totalTransfer', label: 'Transfer', field: 'totalTransfer', format: val => formatCurrency(val) },
-  { name: 'netIncome', label: 'Penghasilan', field: 'netIncome' },
-  { name: 'netReturn', label: 'Dikembalikan', field: 'netReturn' }
-]
-
-// Computed period label
-const periodLabel = computed(() => {
-  const { startDate, endDate } = getPeriodDates()
-  if (!startDate || !endDate) return 'Pilih periode'
-
-  const start = new Date(startDate)
-
-  if (summaryPeriod.value === 'daily') {
-    return `Hari ini: ${formatDateShort(startDate)}`
-  } else if (summaryPeriod.value === 'weekly') {
-    return `Minggu ini: ${formatDateShort(startDate)} - ${formatDateShort(endDate)}`
-  } else if (summaryPeriod.value === 'monthly') {
-    return `Bulan ${start.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`
-  } else if (summaryPeriod.value === 'yearly') {
-    return `Tahun ${start.getFullYear()}`
-  } else {
-    return `${formatDateShort(startDate)} - ${formatDateShort(endDate)}`
+function getShiftIcon(shift) {
+  const icons = {
+    shift1: 'wb_sunny',
+    shift2: 'nights_stay',
+    tambahan_s1: 'add_circle',
+    tambahan_s2: 'add_circle_outline'
   }
-})
+  return icons[shift] || 'schedule'
+}
 
-// Computed preview - always show with default values
-const preview = computed(() => {
-  const plateCount = form.value.plateCount || 0
-  return plateCountService.calculatePreview(plateCount, {
-    pricePerPlate: form.value.pricePerPlate,
-    incomePerPlate: form.value.incomePerPlate,
-    returnPerPlate: form.value.returnPerPlate,
-    taxPercentage: form.value.taxPercentage
-  })
-})
-
-// Methods
 function formatCurrency(value) {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -620,80 +638,225 @@ function formatCurrency(value) {
   }).format(value || 0)
 }
 
-function formatDateShort(dateStr) {
+function formatDate(dateStr) {
   if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('id-ID', {
+  return new Date(dateStr).toLocaleDateString('id-ID', {
+    weekday: 'short',
     day: 'numeric',
     month: 'short',
     year: 'numeric'
   })
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('id-ID', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+// State
+const loading = ref(false)
+const saving = ref(false)
+const showDialog = ref(false)
+const isEditing = ref(false)
+const editingId = ref(null)
+const plateCounts = ref([])
+const filterDate = ref(null)
+const filterShift = ref(null)
+
+// Week selector helper functions
+function getMondayOfWeek(date, weekOffset = 0) {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1) + (weekOffset * 7) // Adjust to Monday
+  d.setDate(diff)
+  return d
 }
 
-function getPeriodDates() {
-  const today = new Date()
-  let startDate, endDate
+function getSundayOfWeek(date, weekOffset = 0) {
+  const monday = getMondayOfWeek(date, weekOffset)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  return sunday
+}
 
-  switch (summaryPeriod.value) {
-    case 'daily':
-      startDate = today.toISOString().split('T')[0]
-      endDate = startDate
-      break
-    case 'weekly': {
-      // Start from Monday of current week
-      const dayOfWeek = today.getDay()
-      const monday = new Date(today)
-      monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
-      const sunday = new Date(monday)
-      sunday.setDate(monday.getDate() + 6)
-      startDate = monday.toISOString().split('T')[0]
-      endDate = sunday.toISOString().split('T')[0]
-      break
-    }
-    case 'monthly': {
-      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
-      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-      startDate = firstDay.toISOString().split('T')[0]
-      endDate = lastDay.toISOString().split('T')[0]
-      break
-    }
-    case 'yearly':
-      startDate = `${today.getFullYear()}-01-01`
-      endDate = `${today.getFullYear()}-12-31`
-      break
-    case 'custom':
-      startDate = customStartDate.value
-      endDate = customEndDate.value
-      break
-    default:
-      startDate = today.toISOString().split('T')[0]
-      endDate = startDate
+function getWeekNumber(date) {
+  const d = new Date(date)
+  const oneJan = new Date(d.getFullYear(), 0, 1)
+  const dayOfYear = Math.floor((d - oneJan) / 86400000) + 1
+  return Math.ceil((dayOfYear + oneJan.getDay()) / 7)
+}
+
+function getWeekDateRange(weekOffset) {
+  const monday = getMondayOfWeek(new Date(), weekOffset)
+  const sunday = getSundayOfWeek(new Date(), weekOffset)
+  const format = (d) => d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+  return `${format(monday)} - ${format(sunday)}`
+}
+
+function selectWeek(weekOffset) {
+  const monday = getMondayOfWeek(new Date(), weekOffset)
+  const sunday = getSundayOfWeek(new Date(), weekOffset)
+  customStartDate.value = monday.toISOString().split('T')[0]
+  customEndDate.value = sunday.toISOString().split('T')[0]
+  fetchPeriodSummary()
+}
+
+// Computed: Selected week number based on start date
+const selectedWeekNumber = computed(() => {
+  if (!customStartDate.value) return '-'
+  return getWeekNumber(new Date(customStartDate.value))
+})
+
+// Period summary - default ke minggu ini (Senin-Minggu)
+const mondayThisWeek = getMondayOfWeek(new Date())
+const sundayThisWeek = getSundayOfWeek(new Date())
+const customStartDate = ref(mondayThisWeek.toISOString().split('T')[0])
+const customEndDate = ref(sundayThisWeek.toISOString().split('T')[0])
+const periodSummary = ref({
+  totalPlates: 0,
+  totalSgpCount: 0,
+  totalHiroseCount: 0,
+  totalTransfer: 0,
+  totalNetIncome: 0,
+  totalIncomeTax: 0,
+  totalNetReturn: 0,
+  totalReturnTax: 0,
+  recordCount: 0
+})
+
+// Computed: Jumlah yang ditransfer pabrik = Nilai Piring - Pajak - Admin
+const amountFromFactory = computed(() => {
+  return (periodSummary.value.totalTransfer || 0) -
+         (periodSummary.value.totalTax || 0) -
+         (periodSummary.value.totalAdminFee || 0)
+})
+
+// Auto-refresh untuk sinkronisasi data antar user
+const autoRefresh = ref(true)
+const autoRefreshCountdown = ref(30)
+const AUTO_REFRESH_INTERVAL = 30 // seconds
+let refreshIntervalId = null
+let countdownIntervalId = null
+
+// Pagination
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 10,
+  rowsNumber: 0
+})
+
+// Table columns
+const columns = computed(() => {
+  const baseCols = [
+    { name: 'date', label: 'Tanggal', field: 'date', format: formatDate, align: 'left', sortable: true },
+    { name: 'shift', label: 'Shift', field: 'shift', align: 'center' },
+    { name: 'sgpCount', label: 'SGP', field: 'sgpCount', align: 'center' },
+    { name: 'hiroseCount', label: 'Hirose', field: 'hiroseCount', align: 'center' },
+    { name: 'totalPlates', label: 'Total', field: 'totalPlates', align: 'center' }
+  ]
+
+  if (isPemilik.value) {
+    baseCols.push(
+      { name: 'totalTransfer', label: 'Transfer', field: 'totalTransfer', align: 'right' },
+      { name: 'totalNetIncome', label: 'Penghasilan', field: 'totalNetIncome', align: 'right' },
+      { name: 'totalNetReturn', label: 'Pengembalian', field: 'totalNetReturn', align: 'right' }
+    )
   }
 
-  return { startDate, endDate }
-}
+  baseCols.push({ name: 'actions', label: 'Aksi', field: 'actions', align: 'center' })
 
-async function fetchPeriodSummary() {
-  const { startDate, endDate } = getPeriodDates()
+  return baseCols
+})
 
-  if (!startDate || !endDate) {
-    if (summaryPeriod.value === 'custom') {
-      $q.notify({
-        type: 'warning',
-        message: 'Pilih tanggal mulai dan akhir'
+// Grouped data by date
+const groupedPlateCounts = computed(() => {
+  const result = []
+  let currentDate = null
+
+  plateCounts.value.forEach(row => {
+    // If new date, add group header
+    if (row.date !== currentDate) {
+      currentDate = row.date
+      // Calculate total for this date
+      const dateRows = plateCounts.value.filter(r => r.date === currentDate)
+      const dateTotalPlates = dateRows.reduce((sum, r) => sum + (parseInt(r.totalPlates) || 0), 0)
+
+      result.push({
+        id: `header-${currentDate}`,
+        isGroupHeader: true,
+        date: currentDate,
+        totalPlates: dateTotalPlates
       })
     }
+    // Add data row
+    result.push({
+      ...row,
+      isGroupHeader: false
+    })
+  })
+
+  return result
+})
+
+// Default form values
+const defaultForm = {
+  date: new Date().toISOString().split('T')[0],
+  shift: 'shift1',
+  sgpCount: 0,
+  hiroseCount: 0,
+  pricePerPlate: 9500,
+  incomePerPlate: 7000,
+  returnPerPlate: 2500,
+  taxPercentage: 2
+}
+
+// State untuk expand pengaturan harga
+const showPriceSettings = ref(false)
+
+const form = ref({ ...defaultForm })
+
+// Computed preview values
+const totalPlatesPreview = computed(() => {
+  return (parseInt(form.value.sgpCount) || 0) + (parseInt(form.value.hiroseCount) || 0)
+})
+
+const totalTransferPreview = computed(() => {
+  return totalPlatesPreview.value * form.value.pricePerPlate
+})
+
+const sgpIncomePreview = computed(() => {
+  const gross = (parseInt(form.value.sgpCount) || 0) * form.value.incomePerPlate
+  const tax = gross * (form.value.taxPercentage / 100)
+  return gross - tax
+})
+
+const sgpReturnPreview = computed(() => {
+  const gross = (parseInt(form.value.sgpCount) || 0) * form.value.returnPerPlate
+  const tax = gross * (form.value.taxPercentage / 100)
+  return gross - tax
+})
+
+const hiroseIncomePreview = computed(() => {
+  const gross = (parseInt(form.value.hiroseCount) || 0) * form.value.incomePerPlate
+  const tax = gross * (form.value.taxPercentage / 100)
+  return gross - tax
+})
+
+const hiroseReturnPreview = computed(() => {
+  const gross = (parseInt(form.value.hiroseCount) || 0) * form.value.returnPerPlate
+  const tax = gross * (form.value.taxPercentage / 100)
+  return gross - tax
+})
+
+const totalNetIncomePreview = computed(() => {
+  return sgpIncomePreview.value + hiroseIncomePreview.value
+})
+
+const totalNetReturnPreview = computed(() => {
+  return sgpReturnPreview.value + hiroseReturnPreview.value
+})
+
+// Functions
+async function fetchPeriodSummary() {
+  const startDate = customStartDate.value
+  const endDate = customEndDate.value
+
+  if (!startDate || !endDate) {
     return
   }
 
@@ -755,7 +918,7 @@ function openInputDialog(shift = null) {
   form.value = {
     ...defaultForm,
     date: new Date().toISOString().split('T')[0],
-    shift: shift || 'siang'
+    shift: shift || 'shift1'
   }
   showDialog.value = true
 }
@@ -771,16 +934,16 @@ async function openEditDialog(id) {
     form.value = {
       date: data.date,
       shift: data.shift,
-      plateCount: parseInt(data.plateCount),
+      sgpCount: parseInt(data.sgpCount),
+      hiroseCount: parseInt(data.hiroseCount),
       pricePerPlate: parseFloat(data.pricePerPlate),
       incomePerPlate: parseFloat(data.incomePerPlate),
       returnPerPlate: parseFloat(data.returnPerPlate),
-      taxPercentage: parseFloat(data.taxPercentage),
-      notes: data.notes || ''
+      taxPercentage: parseFloat(data.taxPercentage)
     }
     showDialog.value = true
   } catch (error) {
-    console.error('Error fetching record:', error)
+    console.error('Error loading data:', error)
     $q.notify({
       type: 'negative',
       message: 'Gagal memuat data'
@@ -791,25 +954,27 @@ async function openEditDialog(id) {
 }
 
 async function saveData() {
-  // Validation
-  if (!form.value.date || !form.value.shift || form.value.plateCount === null) {
-    $q.notify({
-      type: 'warning',
-      message: 'Mohon lengkapi semua field yang wajib diisi'
-    })
-    return
-  }
-
   saving.value = true
   try {
+    const payload = {
+      date: form.value.date,
+      shift: form.value.shift,
+      sgpCount: parseInt(form.value.sgpCount) || 0,
+      hiroseCount: parseInt(form.value.hiroseCount) || 0,
+      pricePerPlate: form.value.pricePerPlate,
+      incomePerPlate: form.value.incomePerPlate,
+      returnPerPlate: form.value.returnPerPlate,
+      taxPercentage: form.value.taxPercentage
+    }
+
     if (isEditing.value) {
-      await plateCountService.update(editingId.value, form.value)
+      await plateCountService.update(editingId.value, payload)
       $q.notify({
         type: 'positive',
         message: 'Data berhasil diperbarui'
       })
     } else {
-      await plateCountService.create(form.value)
+      await plateCountService.create(payload)
       $q.notify({
         type: 'positive',
         message: 'Data berhasil disimpan'
@@ -817,8 +982,8 @@ async function saveData() {
     }
 
     showDialog.value = false
-    fetchData()
-    fetchPeriodSummary()
+    await fetchData()
+    await fetchPeriodSummary()
   } catch (error) {
     console.error('Error saving data:', error)
     $q.notify({
@@ -830,10 +995,10 @@ async function saveData() {
   }
 }
 
-function confirmDelete(row) {
+async function confirmDelete(row) {
   $q.dialog({
     title: 'Konfirmasi Hapus',
-    message: `Apakah Anda yakin ingin menghapus data shift ${row.shift} tanggal ${formatDate(row.date)}?`,
+    message: `Apakah Anda yakin ingin menghapus data ${getShiftLabel(row.shift)} tanggal ${formatDate(row.date)}?`,
     cancel: true,
     persistent: true
   }).onOk(async () => {
@@ -843,8 +1008,8 @@ function confirmDelete(row) {
         type: 'positive',
         message: 'Data berhasil dihapus'
       })
-      fetchData()
-      fetchPeriodSummary()
+      await fetchData()
+      await fetchPeriodSummary()
     } catch (error) {
       console.error('Error deleting:', error)
       $q.notify({
@@ -855,10 +1020,65 @@ function confirmDelete(row) {
   })
 }
 
+// Refresh all data
+async function refreshAllData() {
+  await fetchData()
+  await fetchPeriodSummary()
+  autoRefreshCountdown.value = AUTO_REFRESH_INTERVAL
+}
+
+// Start auto-refresh timer
+function startAutoRefresh() {
+  stopAutoRefresh()
+
+  // Countdown timer
+  countdownIntervalId = setInterval(() => {
+    autoRefreshCountdown.value--
+    if (autoRefreshCountdown.value <= 0) {
+      autoRefreshCountdown.value = AUTO_REFRESH_INTERVAL
+    }
+  }, 1000)
+
+  // Data refresh timer
+  refreshIntervalId = setInterval(() => {
+    refreshAllData()
+  }, AUTO_REFRESH_INTERVAL * 1000)
+}
+
+// Stop auto-refresh timer
+function stopAutoRefresh() {
+  if (refreshIntervalId) {
+    clearInterval(refreshIntervalId)
+    refreshIntervalId = null
+  }
+  if (countdownIntervalId) {
+    clearInterval(countdownIntervalId)
+    countdownIntervalId = null
+  }
+}
+
+// Watch auto-refresh toggle
+watch(autoRefresh, (newVal) => {
+  if (newVal) {
+    startAutoRefresh()
+  } else {
+    stopAutoRefresh()
+  }
+})
+
 // Lifecycle
 onMounted(() => {
   fetchData()
   fetchPeriodSummary()
+
+  // Start auto-refresh if enabled (only for pemilik)
+  if (isPemilik.value && autoRefresh.value) {
+    startAutoRefresh()
+  }
+})
+
+onUnmounted(() => {
+  stopAutoRefresh()
 })
 </script>
 

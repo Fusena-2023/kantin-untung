@@ -181,7 +181,7 @@
       <q-card-section class="q-pa-sm q-pa-md-md">
         <!-- Desktop Table View -->
         <q-table
-          :rows="transactions"
+          :rows="groupedTransactions"
           :columns="columns"
           row-key="id"
           :loading="transactionStore.isLoading"
@@ -189,70 +189,105 @@
           @request="onRequest"
           binary-state-sort
           class="gt-xs"
+          hide-header
         >
-          <template v-slot:body-cell-type="props">
-            <q-td :props="props">
-              <q-chip
-                :color="props.value === 'masuk' ? 'positive' : 'negative'"
-                text-color="white"
-                :label="props.value === 'masuk' ? 'Pemasukan' : 'Pengeluaran'"
-                size="sm"
-              />
-            </q-td>
+          <!-- Custom header -->
+          <template #top-row>
+            <q-tr class="bg-grey-2">
+              <q-th class="text-left">Tanggal</q-th>
+              <q-th class="text-center">Tipe</q-th>
+              <q-th class="text-left">Deskripsi</q-th>
+              <q-th class="text-left">Kategori</q-th>
+              <q-th class="text-right">Jumlah</q-th>
+              <q-th v-if="authStore.isPemilik" class="text-left">Dibuat oleh</q-th>
+              <q-th class="text-center">Aksi</q-th>
+            </q-tr>
           </template>
 
-          <template v-slot:body-cell-amount="props">
-            <q-td :props="props">
-              <span :class="props.row.type === 'masuk' ? 'text-positive' : 'text-negative'">
-                {{ props.row.type === 'masuk' ? '+' : '-' }}{{ formatCurrency(props.value) }}
-              </span>
-            </q-td>
-          </template>
+          <!-- Custom body -->
+          <template #body="props">
+            <!-- Date Group Header -->
+            <q-tr v-if="props.row.isGroupHeader" class="bg-blue-1">
+              <q-td colspan="100%">
+                <div class="row items-center q-gutter-sm">
+                  <q-icon name="event" color="primary" />
+                  <span class="text-weight-bold text-primary">
+                    {{ formatDateFull(props.row.date) }}
+                  </span>
+                  <q-badge color="primary" :label="props.row.count + ' transaksi'" />
+                  <q-space />
+                  <span class="text-positive text-weight-medium">+{{ formatCurrency(props.row.totalIncome) }}</span>
+                  <span class="text-grey-5">|</span>
+                  <span class="text-negative text-weight-medium">-{{ formatCurrency(props.row.totalExpense) }}</span>
+                </div>
+              </q-td>
+            </q-tr>
 
-          <template v-slot:body-cell-transactionDate="props">
-            <q-td :props="props">
-              {{ formatDateOnly(props.value) }}
-            </q-td>
-          </template>
-
-          <template v-slot:body-cell-actions="props">
-            <q-td :props="props">
-              <q-btn
-                flat
-                round
-                dense
-                color="info"
-                icon="visibility"
-                @click="viewTransaction(props.row)"
-                size="sm"
-              >
-                <q-tooltip>Lihat</q-tooltip>
-              </q-btn>
-              <q-btn
-                flat
-                round
-                dense
-                color="warning"
-                icon="edit"
-                @click="editTransaction(props.row)"
-                v-if="canEdit(props.row)"
-                size="sm"
-              >
-                <q-tooltip>Edit</q-tooltip>
-              </q-btn>
-              <q-btn
-                flat
-                round
-                dense
-                color="negative"
-                icon="delete"
-                @click="deleteTransaction(props.row)"
-                v-if="authStore.isPemilik"
-                size="sm"
-              >
-                <q-tooltip>Hapus</q-tooltip>
-              </q-btn>
-            </q-td>
+            <!-- Transaction Row -->
+            <q-tr v-else :props="props">
+              <q-td key="transactionDate" :props="props">
+                <span class="text-grey-7 text-caption">{{ formatTime(props.row.transactionDate) }}</span>
+              </q-td>
+              <q-td key="type" :props="props" class="text-center">
+                <q-chip
+                  :color="props.row.type === 'masuk' ? 'positive' : 'negative'"
+                  text-color="white"
+                  :label="props.row.type === 'masuk' ? 'Pemasukan' : 'Pengeluaran'"
+                  size="sm"
+                />
+              </q-td>
+              <q-td key="description" :props="props">
+                {{ props.row.description }}
+              </q-td>
+              <q-td key="category" :props="props">
+                {{ props.row.category }}
+              </q-td>
+              <q-td key="amount" :props="props" class="text-right">
+                <span :class="props.row.type === 'masuk' ? 'text-positive' : 'text-negative'">
+                  {{ props.row.type === 'masuk' ? '+' : '-' }}{{ formatCurrency(props.row.amount) }}
+                </span>
+              </q-td>
+              <q-td v-if="authStore.isPemilik" key="user" :props="props">
+                {{ props.row.user?.fullName || '-' }}
+              </q-td>
+              <q-td key="actions" :props="props" class="text-center">
+                <q-btn
+                  flat
+                  round
+                  dense
+                  color="info"
+                  icon="visibility"
+                  @click="viewTransaction(props.row)"
+                  size="sm"
+                >
+                  <q-tooltip>Lihat</q-tooltip>
+                </q-btn>
+                <q-btn
+                  flat
+                  round
+                  dense
+                  color="warning"
+                  icon="edit"
+                  @click="editTransaction(props.row)"
+                  v-if="canEdit(props.row)"
+                  size="sm"
+                >
+                  <q-tooltip>Edit</q-tooltip>
+                </q-btn>
+                <q-btn
+                  flat
+                  round
+                  dense
+                  color="negative"
+                  icon="delete"
+                  @click="deleteTransaction(props.row)"
+                  v-if="authStore.isPemilik"
+                  size="sm"
+                >
+                  <q-tooltip>Hapus</q-tooltip>
+                </q-btn>
+              </q-td>
+            </q-tr>
           </template>
         </q-table>
 
@@ -592,7 +627,7 @@
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useAuthStore } from 'stores/auth-store'
 import { useTransactionStore } from 'stores/transaction-store'
-import { formatCurrency, formatDateOnly, formatDateShort } from 'src/utils/format'
+import { formatCurrency, formatDateOnly, formatDateShort, formatDateFull, formatTime } from 'src/utils/format'
 import categoryService from 'src/services/category'
 import reportService from 'src/services/report'
 
@@ -1004,6 +1039,58 @@ if (authStore.isPemilik) {
 }
 
 const transactions = computed(() => transactionStore.transactions)
+
+// Grouped transactions by date
+const groupedTransactions = computed(() => {
+  if (!transactions.value || transactions.value.length === 0) return []
+
+  const result = []
+  const grouped = {}
+
+  // Group by date
+  transactions.value.forEach(tx => {
+    const dateKey = tx.transactionDate ? tx.transactionDate.split('T')[0] : 'unknown'
+    if (!grouped[dateKey]) {
+      grouped[dateKey] = {
+        transactions: [],
+        totalIncome: 0,
+        totalExpense: 0
+      }
+    }
+    grouped[dateKey].transactions.push(tx)
+    if (tx.type === 'masuk') {
+      grouped[dateKey].totalIncome += parseFloat(tx.amount) || 0
+    } else {
+      grouped[dateKey].totalExpense += parseFloat(tx.amount) || 0
+    }
+  })
+
+  // Sort dates descending
+  const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a))
+
+  // Build result with headers and rows
+  sortedDates.forEach(date => {
+    const group = grouped[date]
+
+    // Add header row
+    result.push({
+      id: `header-${date}`,
+      isGroupHeader: true,
+      date: date,
+      count: group.transactions.length,
+      totalIncome: group.totalIncome,
+      totalExpense: group.totalExpense
+    })
+
+    // Add transaction rows
+    group.transactions.forEach(tx => {
+      result.push(tx)
+    })
+  })
+
+  return result
+})
+
 const pagination = computed(() => ({
   page: transactionStore.pagination.page,
   rowsPerPage: transactionStore.pagination.limit,
