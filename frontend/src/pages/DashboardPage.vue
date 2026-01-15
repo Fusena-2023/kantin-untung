@@ -1,68 +1,74 @@
 <template>
   <q-page class="q-pa-sm q-pa-md-md">
     <q-pull-to-refresh @refresh="onRefresh">
-      <div class="row q-mb-md items-center justify-between">
-        <div class="col">
-          <h4 class="text-h5 text-h4-md q-ma-none">
-            Selamat Datang, {{ authStore.user?.fullName || authStore.user?.username }}!
+      <div class="row q-mb-lg items-end justify-between">
+        <div class="col-12 col-md-8">
+          <div class="text-caption text-uppercase text-grey-7 q-mb-xs letter-spacing-1">Dashboard Owner</div>
+          <h4 class="text-h4 text-weight-bold text-primary q-ma-none lh-tight">
+            Halo, {{ authStore.user?.fullName || authStore.user?.username || 'Owner' }}! 👋
           </h4>
-          <p class="text-caption text-body2-md text-grey-6 q-mb-none">
-            Berikut ringkasan keuangan kantin {{ periodLabel }}
+          <p class="text-body1 text-grey-7 q-mt-sm q-mb-none">
+            Selamat datang kembali. Berikut adalah ringkasan performa kantin Anda hari ini.
           </p>
         </div>
-        <div class="col-auto gt-xs">
+        <div class="col-12 col-md-4 text-right gt-sm">
           <q-btn
+            unelevated
             color="primary"
             icon="refresh"
-            label="Refresh"
+            label="Refresh Data"
             @click="fetchData"
             :loading="reportStore.isLoading"
             no-caps
+            class="q-px-md"
           />
         </div>
       </div>
 
-      <!-- Period Filter Tabs -->
-      <q-card class="q-mb-md">
-        <q-tabs
-          v-model="selectedPeriod"
+      <!-- Period Filter Transaction -->
+      <div class="row items-center justify-between q-mb-md">
+        <div class="text-subtitle1 text-weight-bold text-grey-8">Ringkasan Keuangan</div>
+        
+        <q-btn-dropdown
+          color="white"
+          text-color="primary"
+          :label="periodFilterLabel"
           dense
-          class="text-primary"
-          active-color="primary"
-          indicator-color="primary"
-          align="left"
-          @update:model-value="onPeriodChange"
+          no-caps
+          outline
+          class="q-px-sm"
         >
-          <q-tab name="today" label="Hari Ini" />
-          <q-tab name="week" label="7 Hari" />
-          <q-tab name="month" label="Bulan Ini" />
-          <q-tab name="custom" label="Custom" />
-        </q-tabs>
-
-        <!-- Custom Date Range Picker -->
-        <q-slide-transition>
-          <q-card-section v-show="selectedPeriod === 'custom'" class="row q-col-gutter-md">
-            <div class="col-12 col-sm-6">
-              <q-input
-                v-model="customStartDate"
-                type="date"
-                label="Dari Tanggal"
-                filled
-                @update:model-value="onPeriodChange"
-              />
-            </div>
-            <div class="col-12 col-sm-6">
-              <q-input
-                v-model="customEndDate"
-                type="date"
-                label="Sampai Tanggal"
-                filled
-                @update:model-value="onPeriodChange"
-              />
-            </div>
-          </q-card-section>
-        </q-slide-transition>
-      </q-card>
+          <q-list>
+            <q-item clickable v-close-popup @click="setPeriodFilter('today')">
+              <q-item-section>Hari Ini</q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="setPeriodFilter('week')">
+              <q-item-section>7 Hari Terakhir</q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="setPeriodFilter('month')">
+              <q-item-section>Bulan Ini</q-item-section>
+            </q-item>
+            <q-separator />
+            <q-item clickable>
+              <q-item-section>
+                <q-item-label>Custom Tanggal</q-item-label>
+                <div class="row q-col-gutter-xs q-mt-xs">
+                   <q-input dense outlined v-model="customStartDate" type="date" class="col-6" />
+                   <q-input dense outlined v-model="customEndDate" type="date" class="col-6" />
+                </div>
+                <q-btn 
+                  label="Terapkan" 
+                  color="primary" 
+                  size="sm" 
+                  class="q-mt-xs full-width" 
+                  @click="setPeriodFilter('custom')" 
+                  v-close-popup
+                />
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+      </div>
 
     <!-- Summary Cards -->
     <div class="row q-col-gutter-sm q-col-gutter-md-md q-mb-md">
@@ -71,7 +77,7 @@
           <q-card-section class="q-pa-md">
             <div class="row items-center q-mb-sm">
               <q-icon name="trending_up" size="24px" color="positive" class="q-mr-sm" />
-              <span class="text-grey-7">Pemasukan {{ periodCardLabel }}</span>
+              <span class="text-grey-7">Pemasukan {{ periodFilterLabel }}</span>
             </div>
             <div class="text-h5 text-positive text-weight-bold">{{ formatCurrency(currentPeriodData.income) }}</div>
             <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs" :class="profitTrend.incomeColor">
@@ -87,7 +93,7 @@
           <q-card-section class="q-pa-md">
             <div class="row items-center q-mb-sm">
               <q-icon name="trending_down" size="24px" color="negative" class="q-mr-sm" />
-              <span class="text-grey-7">Pengeluaran {{ periodCardLabel }}</span>
+              <span class="text-grey-7">Pengeluaran {{ periodFilterLabel }}</span>
             </div>
             <div class="text-h5 text-negative text-weight-bold">{{ formatCurrency(currentPeriodData.expense) }}</div>
             <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs" :class="profitTrend.expenseColor">
@@ -103,7 +109,7 @@
           <q-card-section class="q-pa-md">
             <div class="row items-center q-mb-sm">
               <q-icon name="account_balance_wallet" size="24px" color="primary" class="q-mr-sm" />
-              <span class="text-grey-7">Keuntungan {{ periodCardLabel }}</span>
+              <span class="text-grey-7">Keuntungan {{ periodFilterLabel }}</span>
             </div>
             <div class="text-h5 text-primary text-weight-bold">{{ formatCurrency(currentPeriodData.profit) }}</div>
             <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs" :class="profitTrend.profitColor">
@@ -128,14 +134,158 @@
           </q-card-section>
         </q-card>
       </div>
+
+      <!-- Catering Section & Filter (Pemilik Only) -->
+      <template v-if="authStore.user?.role === 'pemilik'">
+        <div class="col-12 q-mt-md">
+          <div class="row items-center justify-between q-mb-sm">
+            <h6 class="q-my-none text-weight-bold text-grey-8">Ringkasan Catering</h6>
+            
+            <!-- Catering Filter -->
+            <q-btn-dropdown
+              color="white"
+              text-color="primary"
+              :label="cateringFilterLabel"
+              dense
+              no-caps
+              outline
+              class="q-px-sm"
+            >
+              <q-list>
+                <q-item clickable v-close-popup @click="setCateringFilter('today')">
+                  <q-item-section>Hari Ini</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="setCateringFilter('week')">
+                  <q-item-section>Minggu Ini</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="setCateringFilter('month')">
+                  <q-item-section>Bulan Ini</q-item-section>
+                </q-item>
+                <q-separator />
+                <q-item clickable>
+                  <q-item-section>
+                    <q-item-label>Custom Tanggal</q-item-label>
+                    <div class="row q-col-gutter-xs q-mt-xs">
+                       <q-input dense outlined v-model="cateringStartDate" type="date" class="col-6" />
+                       <q-input dense outlined v-model="cateringEndDate" type="date" class="col-6" />
+                    </div>
+                    <q-btn 
+                      label="Terapkan" 
+                      color="primary" 
+                      size="sm" 
+                      class="q-mt-xs full-width" 
+                      @click="setCateringFilter('custom')" 
+                      v-close-popup
+                    />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+          </div>
+        </div>
+
+        <!-- Total Piring -->
+        <div class="col-12 col-sm-6 col-md-3">
+          <q-card flat bordered class="summary-card bg-deep-orange-1">
+            <q-card-section class="q-pa-md">
+              <div class="row items-center q-mb-sm">
+                <q-icon name="dinner_dining" size="24px" color="deep-orange" class="q-mr-sm" />
+                <span class="text-grey-7">Total Piring</span>
+              </div>
+              <div class="text-h5 text-deep-orange-9 text-weight-bold">{{ cateringData.totalPlates?.toLocaleString('id-ID') || 0 }}</div>
+              <div class="text-caption q-mt-xs text-grey-6">
+                Piring terjual ({{ cateringFilterLabel }})
+              </div>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- Jumlah Ditransfer Pabrik -->
+        <div class="col-12 col-sm-6 col-md-3">
+          <q-card flat bordered class="summary-card bg-cyan-1">
+            <q-card-section class="q-pa-md">
+              <div class="row items-center q-mb-sm">
+                <q-icon name="payments" size="24px" color="cyan" class="q-mr-sm" />
+                <span class="text-grey-7">Ditransfer Pabrik</span>
+              </div>
+              <div class="text-h5 text-cyan-9 text-weight-bold">{{ formatCurrency(amountFromFactory) }}</div>
+              <div class="text-caption q-mt-xs text-grey-6">
+                Nilai Piring - Pajak - Admin
+              </div>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- Pengembalian Bersih -->
+        <div class="col-12 col-sm-6 col-md-3">
+          <q-card flat bordered class="summary-card bg-indigo-1">
+            <q-card-section class="q-pa-md">
+              <div class="row items-center q-mb-sm">
+                <q-icon name="savings" size="24px" color="indigo" class="q-mr-sm" />
+                <span class="text-grey-7">Pengembalian Bersih</span>
+              </div>
+              <div class="text-h5 text-indigo-9 text-weight-bold">{{ formatCurrency(cateringData.totalNetReturn || 0) }}</div>
+              <div class="text-caption q-mt-xs text-grey-6">
+                Total pengembalian bersih
+              </div>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- Penghasilan Bersih Final -->
+        <div class="col-12 col-sm-6 col-md-3">
+          <q-card flat bordered class="summary-card bg-teal-1">
+            <q-card-section class="q-pa-md">
+              <div class="row items-center q-mb-sm">
+                <q-icon name="account_balance" size="24px" color="teal" class="q-mr-sm" />
+                <span class="text-grey-7">Penghasilan Final</span>
+              </div>
+              <div class="text-h5 text-teal-9 text-weight-bold">{{ formatCurrency(cateringData.finalNetIncome || 0) }}</div>
+              <div class="text-caption q-mt-xs text-grey-6">
+                Penghasilan Kantin - Admin
+              </div>
+            </q-card-section>
+          </q-card>
+        </div>
+      </template>
     </div>
 
     <!-- Grafik Pemasukan vs Pengeluaran -->
     <q-card flat bordered class="q-mb-md">
       <q-card-section class="q-pa-md bg-grey-1">
-        <div class="text-subtitle1 text-weight-medium">
-          <q-icon name="show_chart" class="q-mr-sm" color="primary" />
-          Tren Keuangan 7 Hari Terakhir
+        <div class="row items-center justify-between">
+          <div class="text-subtitle1 text-weight-medium">
+            <q-icon name="show_chart" class="q-mr-sm" color="primary" />
+            Tren Keuangan 7 Hari Terakhir
+          </div>
+          <div class="q-gutter-xs">
+            <q-btn-group outline>
+              <q-btn 
+                :color="chartFilter === 'all' ? 'primary' : 'grey-5'" 
+                :outline="chartFilter !== 'all'"
+                label="Semua" 
+                size="sm" 
+                no-caps 
+                @click="chartFilter = 'all'"
+              />
+              <q-btn 
+                :color="chartFilter === 'transaction' ? 'primary' : 'grey-5'" 
+                :outline="chartFilter !== 'transaction'"
+                label="Transaksi" 
+                size="sm" 
+                no-caps 
+                @click="chartFilter = 'transaction'"
+              />
+              <q-btn 
+                :color="chartFilter === 'catering' ? 'primary' : 'grey-5'" 
+                :outline="chartFilter !== 'catering'"
+                label="Catering" 
+                size="sm" 
+                no-caps 
+                @click="chartFilter = 'catering'"
+              />
+            </q-btn-group>
+          </div>
         </div>
       </q-card-section>
       <q-card-section class="q-pa-md">
@@ -202,24 +352,24 @@
             <q-list v-if="dashboard?.recentTransactions?.length" separator class="transaction-list">
               <q-item
                 v-for="transaction in dashboard.recentTransactions"
-                :key="transaction.id"
+                :key="transaction.id + '-' + transaction.type"
                 class="q-pa-md"
               >
                 <q-item-section avatar>
                   <q-avatar
                     size="48px"
-                    :class="transaction.type === 'masuk' ? 'avatar-income' : 'avatar-expense'"
+                    :class="transaction.type === 'catering' ? 'avatar-catering' : (transaction.activityType === 'masuk' ? 'avatar-income' : 'avatar-expense')"
                     text-color="white"
                   >
                     <q-icon
-                      :name="transaction.type === 'masuk' ? 'trending_up' : 'trending_down'"
+                      :name="transaction.type === 'catering' ? 'restaurant' : (transaction.activityType === 'masuk' ? 'trending_up' : 'trending_down')"
                       size="24px"
                     />
                   </q-avatar>
                 </q-item-section>
                 <q-item-section>
                   <q-item-label class="text-subtitle1 text-weight-medium">
-                    {{ transaction.description }}
+                    {{ transaction.description || 'Tidak ada deskripsi' }}
                   </q-item-label>
                   <q-item-label caption class="text-body2 text-grey-7">
                     <q-icon name="label" size="14px" class="q-mr-xs" />
@@ -229,13 +379,13 @@
                 <q-item-section side class="text-right">
                   <q-item-label
                     class="text-h6 text-weight-bold"
-                    :class="transaction.type === 'masuk' ? 'text-positive' : 'text-negative'"
+                    :class="transaction.type === 'catering' ? 'text-cyan-9' : (transaction.activityType === 'masuk' ? 'text-positive' : 'text-negative')"
                   >
-                    {{ transaction.type === 'masuk' ? '+' : '-' }}{{ formatCurrency(transaction.amount) }}
+                    {{ transaction.activityType === 'masuk' ? '+' : '-' }}{{ formatCurrency(transaction.amount) }}
                   </q-item-label>
                   <q-item-label caption class="text-grey-6">
                     <q-icon name="schedule" size="14px" class="q-mr-xs" />
-                    {{ formatDate(transaction.created_at) }}
+                    {{ formatDate(transaction.date || transaction.created_at) }}
                   </q-item-label>
                 </q-item-section>
               </q-item>
@@ -322,6 +472,7 @@
 import { computed, onMounted, ref, watch, nextTick } from 'vue'
 import { useReportStore } from 'stores/report-store'
 import { useAuthStore } from 'stores/auth-store'
+import { plateCountService } from 'src/services/plateCount' // Import plateCountService directly
 import { formatCurrency, formatDate } from 'src/utils/format'
 import { Chart, registerables } from 'chart.js'
 
@@ -335,6 +486,7 @@ let chartInstance = null
 
 const dashboard = computed(() => reportStore.dashboard)
 const selectedPeriod = ref('month')
+const chartFilter = ref('all') // 'all', 'transaction', 'catering'
 const customStartDate = ref('')
 const customEndDate = ref('')
 
@@ -346,45 +498,17 @@ const categoryColumns = [
   { name: 'pengeluaran', label: 'Pengeluaran', field: 'expense', align: 'right' }
 ]
 
-// Computed properties untuk period
-const periodLabel = computed(() => {
-  const today = new Date()
-  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
-
-  switch (selectedPeriod.value) {
-    case 'today':
-      return today.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-    case 'week':
-      return '7 Hari Terakhir'
-    case 'month':
-      return `${monthNames[today.getMonth()]} ${today.getFullYear()}`
-    case 'custom':
-      return `${customStartDate.value} - ${customEndDate.value}`
-    default:
-      return ''
-  }
-})
-
-const periodCardLabel = computed(() => {
-  switch (selectedPeriod.value) {
-    case 'today':
-      return 'Hari Ini'
-    case 'week':
-      return '7 Hari'
-    case 'month':
-      return 'Bulan Ini'
-    case 'custom':
-      return 'Custom'
-    default:
-      return ''
-  }
-})
-
 // Get current period data
 const currentPeriodData = computed(() => {
   const data = dashboard.value
-  if (!data) return { income: 0, expense: 0, profit: 0, transactions: 0 }
+  const defaultCatering = {
+    totalPlates: 0,
+    amountFromFactory: 0,
+    totalNetReturn: 0,
+    finalNetIncome: 0
+  }
+
+  if (!data) return { income: 0, expense: 0, profit: 0, transactions: 0, catering: defaultCatering }
 
   switch (selectedPeriod.value) {
     case 'today':
@@ -392,10 +516,11 @@ const currentPeriodData = computed(() => {
         income: data.today?.income || 0,
         expense: data.today?.expense || 0,
         profit: data.today?.profit || 0,
-        transactions: data.today?.transactions || 0
+        transactions: data.today?.transactions || 0,
+        catering: data.today?.catering || defaultCatering
       }
     case 'week':
-      // Sum last 7 days
+      // Sum last 7 days for transactions
       if (data.dailyData && Array.isArray(data.dailyData)) {
         const sum = data.dailyData.reduce((acc, day) => ({
           income: acc.income + (day.income || 0),
@@ -403,26 +528,29 @@ const currentPeriodData = computed(() => {
           profit: acc.profit + (day.profit || 0),
           count: acc.count + 1
         }), { income: 0, expense: 0, profit: 0, count: 0 })
+        
         return {
           income: sum.income,
           expense: sum.expense,
           profit: sum.profit,
-          transactions: sum.count
+          transactions: sum.count,
+          catering: defaultCatering // Not available for week yet
         }
       }
-      return { income: 0, expense: 0, profit: 0, transactions: 0 }
+      return { income: 0, expense: 0, profit: 0, transactions: 0, catering: defaultCatering }
     case 'month':
       return {
         income: data.thisMonth?.income || 0,
         expense: data.thisMonth?.expense || 0,
         profit: data.thisMonth?.profit || 0,
-        transactions: data.thisMonth?.transactions || 0
+        transactions: data.thisMonth?.transactions || 0,
+        catering: data.thisMonth?.catering || defaultCatering
       }
     case 'custom':
       // Will be fetched separately
-      return { income: 0, expense: 0, profit: 0, transactions: 0 }
+      return { income: 0, expense: 0, profit: 0, transactions: 0, catering: defaultCatering }
     default:
-      return { income: 0, expense: 0, profit: 0, transactions: 0 }
+      return { income: 0, expense: 0, profit: 0, transactions: 0, catering: defaultCatering }
   }
 })
 
@@ -473,16 +601,115 @@ const profitTrend = computed(() => {
 const categoryBreakdown = computed(() => {
   const data = dashboard.value
   if (!data || !data.byCategory) return []
-  return data.byCategory
+  // Filter out catering from this table as requested
+  return data.byCategory.filter(c => c.category !== 'Catering')
 })
 
 const onRefresh = async (done) => {
-  await fetchData()
+  await Promise.all([fetchData(), fetchCateringData()])
   done()
 }
 
 const onPeriodChange = async () => {
   await fetchData()
+}
+
+const setPeriodFilter = (val) => {
+  selectedPeriod.value = val
+  if (val !== 'custom') { // For custom, we wait for 'Terapkan' button
+     onPeriodChange()
+  }
+}
+
+const periodFilterLabel = computed(() => {
+  switch (selectedPeriod.value) {
+    case 'today': return 'Hari Ini'
+    case 'week': return '7 Hari Terakhir'
+    case 'month': return 'Bulan Ini'
+    case 'custom': 
+       if (!customStartDate.value) return 'Custom'
+       return new Date(customStartDate.value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' - ' + new Date(customEndDate.value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+  }
+  return 'Filter Transaksi'
+})
+
+// --- Catering Logic (Separated) ---
+const cateringFilter = ref('month') // Default filter catering
+const cateringStartDate = ref('')
+const cateringEndDate = ref('')
+const cateringData = ref({
+  totalPlates: 0,
+  totalTransfer: 0,
+  totalNetReturn: 0,
+  totalNetIncome: 0,
+  finalNetIncome: 0,
+  totalTax: 0,
+  totalAdminFee: 0
+})
+
+const cateringFilterLabel = computed(() => {
+  switch (cateringFilter.value) {
+    case 'today': return 'Hari Ini'
+    case 'week': return 'Minggu Ini'
+    case 'month': return 'Bulan Ini'
+    case 'custom': 
+       if (!cateringStartDate.value) return 'Custom'
+       return new Date(cateringStartDate.value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' - ' + new Date(cateringEndDate.value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+  }
+  return 'Filter'
+})
+
+// Amount from Factory calculation (needs manual calc if not provided by backend directly in same structure)
+const amountFromFactory = computed(() => {
+  // Logic same as PlateCountPage: Transfer - Tax - Admin
+  return (cateringData.value.totalTransfer || 0) - (cateringData.value.totalTax || 0) - (cateringData.value.totalAdminFee || 0)
+})
+
+const setCateringFilter = (val) => {
+  cateringFilter.value = val
+  // Auto set dates for predefined
+  if (val === 'today') {
+    const d = new Date().toISOString().split('T')[0]
+    cateringStartDate.value = d
+    cateringEndDate.value = d
+    fetchCateringData()
+  } else if (val === 'week') {
+    // Current week (Monday to Sunday)
+    const d = new Date()
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is sunday
+    const monday = new Date(d.setDate(diff))
+    const sunday = new Date(d.setDate(monday.getDate() + 6))
+    cateringStartDate.value = monday.toISOString().split('T')[0]
+    cateringEndDate.value = sunday.toISOString().split('T')[0]
+    fetchCateringData()
+  } else if (val === 'month') {
+    const d = new Date()
+    const firstDay = new Date(d.getFullYear(), d.getMonth(), 1)
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+    cateringStartDate.value = firstDay.toISOString().split('T')[0]
+    cateringEndDate.value = lastDay.toISOString().split('T')[0]
+    fetchCateringData()
+  } else if (val === 'custom') {
+    if (cateringStartDate.value && cateringEndDate.value) {
+      fetchCateringData()
+    }
+  }
+}
+
+const fetchCateringData = async () => {
+  if (authStore.user?.role !== 'pemilik' && authStore.user?.role !== 1) return
+
+  try {
+    const params = {
+      startDate: cateringStartDate.value,
+      endDate: cateringEndDate.value
+    }
+    const response = await plateCountService.getSummary(params) // Used existing functionality
+    cateringData.value = response.data
+  } catch (err) {
+    console.error('Failed to fetch catering data:', err)
+  }
 }
 
 const fetchData = async () => {
@@ -520,43 +747,68 @@ const renderChart = () => {
 
   const incomeData = dailyData.map(d => d.income || 0)
   const expenseData = dailyData.map(d => d.expense || 0)
+  const cateringData = dailyData.map(d => d.catering || 0)
 
-  console.log('Rendering chart with data:', { labels, incomeData, expenseData })
+  console.log('Rendering chart with data:', { labels, incomeData, expenseData, cateringData })
+  
+  const datasets = []
+
+  // Dataset Income (Transaction)
+  if (chartFilter.value === 'all' || chartFilter.value === 'transaction') {
+    datasets.push({
+      label: 'Pemasukan',
+      data: incomeData,
+      borderColor: '#38ef7d',
+      backgroundColor: 'rgba(56, 239, 125, 0.1)',
+      borderWidth: 3,
+      tension: 0.4,
+      fill: true,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#38ef7d',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2
+    })
+    
+    datasets.push({
+      label: 'Pengeluaran',
+      data: expenseData,
+      borderColor: '#ff6a00',
+      backgroundColor: 'rgba(255, 106, 0, 0.1)',
+      borderWidth: 3,
+      tension: 0.4,
+      fill: true,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#ff6a00',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2
+    })
+  }
+
+  // Dataset Catering
+  if (chartFilter.value === 'all' || chartFilter.value === 'catering') {
+    datasets.push({
+      label: 'Catering (Net)',
+      data: cateringData,
+      borderColor: '#06b6d4', // Cyan
+      backgroundColor: 'rgba(6, 182, 212, 0.1)',
+      borderWidth: 3,
+      tension: 0.4,
+      fill: true,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#06b6d4',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2
+    })
+  }
 
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
-      datasets: [
-        {
-          label: 'Pemasukan',
-          data: incomeData,
-          borderColor: '#38ef7d',
-          backgroundColor: 'rgba(56, 239, 125, 0.1)',
-          borderWidth: 3,
-          tension: 0.4,
-          fill: true,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#38ef7d',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2
-        },
-        {
-          label: 'Pengeluaran',
-          data: expenseData,
-          borderColor: '#ff6a00',
-          backgroundColor: 'rgba(255, 106, 0, 0.1)',
-          borderWidth: 3,
-          tension: 0.4,
-          fill: true,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#ff6a00',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2
-        }
-      ]
+      datasets
     },
     options: {
       responsive: true,
@@ -634,6 +886,13 @@ const renderChart = () => {
   console.log('Chart instance created:', chartInstance)
 }
 
+// Watch for chart filter
+watch(chartFilter, () => {
+  if (dashboard.value?.dailyData) {
+    nextTick(() => renderChart())
+  }
+})
+
 // Watch for dashboard data changes
 watch(() => dashboard.value?.dailyData, () => {
   nextTick(() => renderChart())
@@ -641,10 +900,21 @@ watch(() => dashboard.value?.dailyData, () => {
 
 onMounted(() => {
   fetchData()
+  // Initialize catering filter dates
+  setCateringFilter('month')
 })
 </script>
 
 <style scoped>
+/* Helper Classes */
+.letter-spacing-1 {
+  letter-spacing: 1px;
+}
+
+.lh-tight {
+  line-height: 1.2;
+}
+
 /* Summary Cards */
 .summary-card {
   border-radius: 8px;
@@ -671,6 +941,10 @@ onMounted(() => {
 
 .avatar-expense {
   background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+}
+
+.avatar-catering {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
 }
 
 /* Summary Items */
