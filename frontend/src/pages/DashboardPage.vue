@@ -1,27 +1,27 @@
 <template>
   <q-page class="q-pa-sm q-pa-md-md">
     <q-pull-to-refresh @refresh="onRefresh">
-      <div class="row q-mb-lg items-end justify-between">
-        <div class="col-12 col-md-8">
-          <div class="text-caption text-uppercase text-grey-7 q-mb-xs letter-spacing-1">Dashboard Owner</div>
-          <h4 class="text-h4 text-weight-bold text-primary q-ma-none lh-tight">
-            Halo, {{ authStore.user?.fullName || authStore.user?.username || 'Owner' }}! 👋
-          </h4>
-          <p class="text-body1 text-grey-7 q-mt-sm q-mb-none">
-            Selamat datang kembali. Berikut adalah ringkasan performa kantin Anda hari ini.
-          </p>
+      <div class="row q-mb-md items-center justify-between">
+        <div class="col">
+          <h5 class="text-h5 text-weight-bold text-primary q-ma-none">
+            Dashboard {{ authStore.user?.role === 'pemilik' || authStore.user?.role === 1 ? 'Owner' : 'Staff' }}
+          </h5>
+          <div class="text-caption text-grey-7">
+            Selamat datang, {{ authStore.user?.fullName || 'User' }}
+          </div>
         </div>
-        <div class="col-12 col-md-4 text-right gt-sm">
+        <div class="col-auto">
           <q-btn
-            unelevated
+            flat
+            round
+            dense
             color="primary"
             icon="refresh"
-            label="Refresh Data"
             @click="fetchData"
             :loading="reportStore.isLoading"
-            no-caps
-            class="q-px-md"
-          />
+          >
+            <q-tooltip>Refresh Data</q-tooltip>
+          </q-btn>
         </div>
       </div>
 

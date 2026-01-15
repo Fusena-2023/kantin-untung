@@ -1,93 +1,104 @@
 <template>
-  <q-page class="row justify-center items-center bg-grey-2">
-    <div class="column q-pa-md" style="max-width: 380px; width: 100%">
-      <q-card flat bordered class="login-card">
-        <!-- Header -->
-        <q-card-section class="text-center q-pb-none">
-          <div class="q-mb-md">
-            <q-icon name="store" size="48px" color="primary" />
-          </div>
-          <div class="text-h5 text-weight-bold text-grey-9">
-            Kantin Untung
-          </div>
-          <div class="text-caption text-grey-6 q-mt-xs">
-            Sistem Pencatatan Keuangan
-          </div>
-        </q-card-section>
-
-        <q-card-section class="q-pt-lg">
-          <q-form @submit="onSubmit" @reset="onReset" greedy>
-            <q-input
-              v-model="form.username"
-              label="Username"
-              outlined
-              dense
-              :rules="[val => val && val.length > 0 || 'Username diperlukan']"
-              class="q-mb-sm"
-            >
-              <template v-slot:prepend>
-                <q-icon name="person" size="sm" color="grey-6" />
-              </template>
-            </q-input>
-
-            <q-input
-              v-model="form.password"
-              label="Password"
-              :type="showPassword ? 'text' : 'password'"
-              outlined
-              dense
-              :rules="[val => val && val.length > 0 || 'Password diperlukan']"
-              class="q-mb-md"
-            >
-              <template v-slot:prepend>
-                <q-icon name="lock" size="sm" color="grey-6" />
-              </template>
-              <template v-slot:append>
-                <q-icon
-                  :name="showPassword ? 'visibility_off' : 'visibility'"
-                  class="cursor-pointer"
-                  size="sm"
-                  color="grey-6"
-                  @click="showPassword = !showPassword"
-                />
-              </template>
-            </q-input>
-
-            <q-btn
-              label="Login"
-              type="submit"
-              color="primary"
-              unelevated
-              :loading="authStore.isLoading"
-              class="full-width q-mb-sm"
-              no-caps
-            />
-
-            <q-btn
-              label="Reset"
-              type="reset"
-              color="grey-7"
-              flat
-              class="full-width"
-              no-caps
-            />
-
-            <div class="text-center q-mt-md">
-              <span class="text-grey-7 text-body2">Belum punya akun?</span>
-              <router-link to="/register" class="text-primary text-weight-medium q-ml-xs">
-                Daftar
-              </router-link>
+  <q-layout view="lHh Lpr lFf">
+    <q-page-container>
+      <q-page class="row window-height overflow-hidden bg-gradient-kantin">
+        <!-- Left Side - Visual & Branding -->
+        <div class="col-md-6 gt-sm column justify-center items-center relative-position z-top">
+          <div class="text-center q-pa-xl text-white">
+            <q-img src="~assets/logo-kantin.png" width="300px" class="q-mb-lg drop-shadow-lg" />
+            <h1 class="text-h3 text-weight-bold q-my-md text-shadow">Kantin Untung</h1>
+            <div class="text-h6 text-weight-medium opacity-90 text-shadow" style="max-width: 500px">
+              Solusi cerdas pencatatan keuangan kantin Anda.
             </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
+          </div>
+        </div>
 
-      <!-- Footer -->
-      <div class="text-center q-mt-md text-caption text-grey-6">
-        © 2026 Kantin Untung. All rights reserved.
-      </div>
-    </div>
-  </q-page>
+        <!-- Right Side - Login Form -->
+        <div class="col-12 col-md-6 column justify-center items-center q-pa-lg relative-position">
+           <!-- Glass Card Container -->
+          <div class="glass-card full-width q-pa-xl" style="max-width: 480px">
+            <!-- Mobile Header (Visible only on small screens) -->
+            <div class="lt-md text-center q-mb-lg">
+              <q-img src="~assets/logo-kantin.png" width="120px" class="q-mb-md" />
+            </div>
+
+            <div class="text-h4 text-weight-bold text-grey-9 q-mb-xs">Selamat Datang Kembali!</div>
+            <div class="text-subtitle1 text-grey-7 q-mb-xl">Masuk untuk mengelola kantinmu</div>
+
+            <q-form @submit="onSubmit" @reset="onReset" greedy class="q-gutter-y-md">
+              <q-input
+                v-model="form.username"
+                placeholder="Username"
+                outlined
+                class="rounded-input"
+                bg-color="grey-1"
+                :rules="[val => val && val.length > 0 || 'Username diperlukan']"
+                hide-bottom-space
+              >
+                <template v-slot:prepend>
+                  <q-icon name="person_outline" size="22px" color="orange-8" class="q-pl-sm" />
+                </template>
+              </q-input>
+
+              <q-input
+                v-model="form.password"
+                placeholder="Password"
+                :type="showPassword ? 'text' : 'password'"
+                outlined
+                class="rounded-input"
+                bg-color="grey-1"
+                :rules="[val => val && val.length > 0 || 'Password diperlukan']"
+                hide-bottom-space
+              >
+                <template v-slot:prepend>
+                  <q-icon name="lock_outline" size="22px" color="orange-8" class="q-pl-sm" />
+                </template>
+                <template v-slot:append>
+                  <q-icon
+                    :name="showPassword ? 'visibility_off' : 'visibility'"
+                    class="cursor-pointer q-pr-sm"
+                    size="xs"
+                    color="grey-6"
+                    @click="showPassword = !showPassword"
+                  />
+                </template>
+              </q-input>
+
+              <div class="row items-center justify-between q-mt-sm">
+                <q-checkbox v-model="rememberMe" label="Ingat saya" size="sm" color="orange-8" dense />
+                <a href="#" class="text-caption text-orange-9 text-weight-bold" style="text-decoration: none">Lupa Password?</a>
+              </div>
+
+              <q-btn
+                label="MASUK"
+                type="submit"
+                unelevated
+                :loading="authStore.isLoading"
+                class="full-width q-mt-lg shadow-2"
+                no-caps
+                rounded
+                style="background: linear-gradient(to right, #ff9800, #f57c00); height: 50px; font-weight: bold; font-size: 16px; letter-spacing: 0.5px;"
+              />
+
+               <div class="text-center q-mt-lg">
+                <span class="text-grey-8 text-caption">Belum punya akun?</span>
+                <router-link to="/register" class="text-orange-9 text-weight-bold q-ml-xs text-caption" style="text-decoration: none">
+                  Daftar Sekarang
+                </router-link>
+              </div>
+            </q-form>
+          </div>
+          
+          <div class="absolute-bottom text-center q-pb-md text-caption text-white lt-md">
+            © 2026 Kantin Untung
+          </div>
+           <div class="absolute-bottom text-center q-pb-md text-caption text-grey-8 gt-sm">
+            © 2026 Kantin Untung
+          </div>
+        </div>
+      </q-page>
+    </q-page-container>
+  </q-layout>
 </template>
 
 <script setup>
@@ -102,33 +113,28 @@ const form = ref({
 })
 
 const showPassword = ref(false)
+const rememberMe = ref(false)
 
 const onSubmit = async () => {
   try {
     const user = await authStore.login(form.value)
 
-    // Ensure token is properly set in localStorage and axios headers
     const token = authStore.token
     if (token) {
       localStorage.setItem('auth_token', token)
     }
 
-    // Force auth state update and complete reload
     authStore.initializeAuth()
 
-    // Direct navigation based on role with full page reload
-    // Check role by ID (1 = pemilik) or by name from userRole
     const isPemilik = user.role === 1 || user.userRole?.name === 'pemilik'
     const targetPath = isPemilik ? '/app/dashboard' : '/app/transactions'
 
-    // Force complete page reload to ensure all components reinitialize properly
     setTimeout(() => {
       window.location.href = window.location.origin + '/#' + targetPath
     }, 200)
 
   } catch (error) {
     console.error('Login error:', error)
-    // Simple alert instead of $q.notify for now
     alert(typeof error === 'string' ? error : 'Login gagal')
   }
 }
@@ -140,16 +146,39 @@ const onReset = () => {
 </script>
 
 <style scoped>
-.login-card {
-  border-radius: 12px;
-  background: white;
+.bg-gradient-kantin {
+  /* Warm gradient spanning the whole page */
+  background: linear-gradient(135deg, #ff9800 0%, #ff5722 50%, #e91e63 100%);
 }
 
-a {
-  text-decoration: none;
+.glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
-a:hover {
-  text-decoration: underline;
+.rounded-input :deep(.q-field__control) {
+  border-radius: 12px !important;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* Enhancing inputs */
+.rounded-input :deep(.q-field__control:before) {
+  border-color: rgba(0,0,0,0.1);
+}
+
+.drop-shadow-lg {
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+}
+
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.opacity-90 {
+  opacity: 0.9;
 }
 </style>
