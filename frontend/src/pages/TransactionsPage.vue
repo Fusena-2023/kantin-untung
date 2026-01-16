@@ -8,172 +8,213 @@
         </div>
       </div>
 
-    <!-- Ringkasan & Filter -->
-    <q-card class="q-mb-md">
-      <q-card-section>
-        <div class="row items-center justify-between q-mb-md">
-          <div class="text-h6">
-            <q-icon name="analytics" class="q-mr-sm" />
-            Ringkasan
+    <!-- Ringkasan & Filter (Smart Layout) -->
+    <q-card flat bordered class="q-mb-md bg-white rounded-borders">
+      <q-card-section class="q-pb-sm">
+        <!-- Header & Search Row -->
+        <div class="row items-center q-gutter-x-sm">
+          <div class="col-grow">
+            <q-input
+              v-model="filters.search"
+              placeholder="Cari transaksi..."
+              dense
+              outlined
+              rounded
+              bg-color="grey-1"
+              @keyup.enter="applyFilters"
+            >
+              <template v-slot:prepend>
+                <q-icon name="search" color="grey-6" />
+              </template>
+            </q-input>
           </div>
-          <div class="row q-gutter-sm items-center" v-if="authStore.isPemilik">
+          <div class="col-auto">
+            <q-btn
+              :color="showFilters ? 'primary' : 'grey-7'"
+              :flat="!showFilters"
+              :unelevated="showFilters"
+              round
+              dense
+              icon="tune"
+              @click="showFilters = !showFilters"
+            >
+              <q-tooltip>Filter Lanjutan</q-tooltip>
+            </q-btn>
+          </div>
+          <div class="col-auto">
+            <q-btn
+              color="grey-7"
+              flat
+              round
+              dense
+              icon="refresh"
+              @click="resetFilters"
+            >
+              <q-tooltip>Reset</q-tooltip>
+            </q-btn>
+          </div>
+        </div>
+
+        <!-- Collapsible Advanced Filters -->
+        <q-slide-transition>
+          <div v-show="showFilters" class="q-mt-sm">
+            <div class="row q-col-gutter-sm">
+              <div class="col-6 col-sm-3">
+                <q-select
+                  v-model="filters.type"
+                  label="Tipe"
+                  dense
+                  outlined
+                  :options="typeOptions"
+                  emit-value
+                  map-options
+                  clearable
+                  bg-color="white"
+                  @update:model-value="loadCategories"
+                />
+              </div>
+              <div class="col-6 col-sm-3">
+                <q-select
+                  v-model="filters.category"
+                  label="Kategori"
+                  dense
+                  outlined
+                  :options="filteredCategoryOptions"
+                  emit-value
+                  map-options
+                  clearable
+                  bg-color="white"
+                  :loading="categoriesLoading"
+                  use-input
+                  input-debounce="0"
+                  @filter="filterCategoryFn"
+                />
+              </div>
+              <div class="col-12 col-sm-6">
+                <q-input
+                  v-model="dateRangeText"
+                  placeholder="Rentang Tanggal"
+                  dense
+                  outlined
+                  readonly
+                  bg-color="white"
+                  clearable
+                  @clear="clearDateRange"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="event" class="cursor-pointer">
+                      <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                        <q-date
+                          v-model="dateRange"
+                          range
+                          mask="YYYY-MM-DD"
+                        >
+                          <div class="row items-center justify-end">
+                            <q-btn v-close-popup label="OK" color="primary" flat />
+                          </div>
+                        </q-date>
+                      </q-popup-proxy>
+                    </q-icon>
+                  </template>
+                </q-input>
+              </div>
+              <div class="col-12 text-right">
+                <q-btn 
+                  color="primary" 
+                  unelevated 
+                  label="Terapkan Filter" 
+                  size="sm" 
+                  no-caps 
+                  @click="applyFilters"
+                />
+              </div>
+            </div>
+          </div>
+        </q-slide-transition>
+      </q-card-section>
+
+      <q-separator v-if="authStore.isPemilik" />
+
+      <!-- Compact Summary Section (Collapsible Header) -->
+      <q-expansion-item
+        v-if="authStore.isPemilik"
+        dense
+        dense-toggle
+        expand-separator
+        icon="analytics"
+        label="Ringkasan Keuangan"
+        header-class="text-weight-bold text-grey-8"
+        default-opened
+      >
+        <q-card-section class="q-pt-sm q-pb-md">
+          <!-- Summary Cards (Grid Compact) -->
+          <div class="row q-col-gutter-sm" v-if="summary">
+            <!-- Pemasukan -->
+            <div class="col-6 col-md-3">
+              <q-card flat bordered class="bg-green-1">
+                <q-card-section class="q-pa-sm text-center">
+                  <div class="text-caption text-grey-7">Pemasukan</div>
+                  <div class="text-subtitle1 text-weight-bold text-positive text-ellipsis">
+                    {{ formatCurrency(summary.totalIncome) }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+            <!-- Pengeluaran -->
+            <div class="col-6 col-md-3">
+              <q-card flat bordered class="bg-red-1">
+                <q-card-section class="q-pa-sm text-center">
+                  <div class="text-caption text-grey-7">Pengeluaran</div>
+                  <div class="text-subtitle1 text-weight-bold text-negative text-ellipsis">
+                    {{ formatCurrency(summary.totalExpense) }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+            <!-- Keuntungan -->
+            <div class="col-6 col-md-3">
+              <q-card flat bordered class="bg-blue-1">
+                <q-card-section class="q-pa-sm text-center">
+                  <div class="text-caption text-grey-7">Keuntungan</div>
+                  <div class="text-subtitle1 text-weight-bold text-primary text-ellipsis">
+                    {{ formatCurrency(summary.profit) }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+            <!-- Transaksi -->
+            <div class="col-6 col-md-3">
+              <q-card flat bordered class="bg-purple-1">
+                <q-card-section class="q-pa-sm text-center">
+                  <div class="text-caption text-grey-7">Total Transaksi</div>
+                  <div class="text-subtitle1 text-weight-bold text-purple-9">
+                    {{ summary.count }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+          </div>
+          
+          <!-- Period Selector (Compact) -->
+          <div class="row justify-end q-mt-sm">
             <q-btn-toggle
               v-model="summaryPeriod"
               toggle-color="primary"
-              :options="periodOptions"
+              :options="[
+                {label: 'Hari Ini', value: 'today'},
+                {label: 'Bulan Ini', value: 'month'}
+              ]"
               unelevated
               rounded
+              size="sm"
               dense
+              flat
+              class="text-grey-7"
               @update:model-value="onPeriodChange"
             />
           </div>
-        </div>
-
-        <!-- Period Label - Only for Pemilik -->
-        <div class="text-subtitle2 text-grey-7 q-mb-md" v-if="authStore.isPemilik">
-          <q-icon name="date_range" class="q-mr-xs" />
-          {{ periodLabel }}
-        </div>
-
-        <!-- Summary Cards - Pemilik -->
-        <div class="row q-col-gutter-md q-mb-md" v-if="summary && authStore.isPemilik">
-          <div class="col-6 col-sm-3">
-            <q-card flat bordered class="bg-green-1">
-              <q-card-section class="text-center q-pa-sm">
-                <div class="text-h6 text-positive">{{ formatCurrency(summary.totalIncome) }}</div>
-                <div class="text-caption text-grey-7">Pemasukan</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-6 col-sm-3">
-            <q-card flat bordered class="bg-red-1">
-              <q-card-section class="text-center q-pa-sm">
-                <div class="text-h6 text-negative">{{ formatCurrency(summary.totalExpense) }}</div>
-                <div class="text-caption text-grey-7">Pengeluaran</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-6 col-sm-3">
-            <q-card flat bordered class="bg-blue-1">
-              <q-card-section class="text-center q-pa-sm">
-                <div class="text-h6 text-primary">{{ formatCurrency(summary.profit) }}</div>
-                <div class="text-caption text-grey-7">Keuntungan</div>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-6 col-sm-3">
-            <q-card flat bordered class="bg-purple-1">
-              <q-card-section class="text-center q-pa-sm">
-                <div class="text-h6 text-purple-9">{{ summary.count }}</div>
-                <div class="text-caption text-grey-7">Transaksi</div>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-
-        <!-- Summary Cards - Pegawai (Hanya jumlah transaksi) -->
-        <div class="row q-col-gutter-md q-mb-md" v-if="summary && !authStore.isPemilik">
-          <div class="col-12 col-sm-4">
-            <q-card flat bordered class="bg-blue-1">
-              <q-card-section class="text-center q-pa-sm">
-                <div class="text-h4 text-primary">{{ summary.count }}</div>
-                <div class="text-caption text-grey-7">Transaksi Anda</div>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-
-        <!-- Filter Section -->
-        <q-separator class="q-mb-md" />
-        <div class="row q-col-gutter-sm items-end">
-          <div class="col-12 col-sm-3">
-            <q-input
-              v-model="filters.search"
-              label="Cari transaksi..."
-              dense
-              outlined
-              @keyup.enter="applyFilters"
-            >
-              <template v-slot:append>
-                <q-icon name="search" size="sm" />
-              </template>
-            </q-input>
-          </div>
-
-          <div class="col-6 col-sm-2">
-            <q-select
-              v-model="filters.type"
-              label="Tipe"
-              dense
-              outlined
-              :options="typeOptions"
-              emit-value
-              map-options
-              clearable
-              @update:model-value="loadCategories"
-            />
-          </div>
-
-          <div class="col-6 col-sm-2">
-            <q-select
-              v-model="filters.category"
-              label="Kategori"
-              dense
-              outlined
-              :options="filteredCategoryOptions"
-              emit-value
-              map-options
-              clearable
-              :loading="categoriesLoading"
-            />
-          </div>
-
-          <div class="col-12 col-sm-3">
-            <q-input
-              v-model="dateRangeText"
-              label="Rentang Tanggal"
-              dense
-              outlined
-              readonly
-              clearable
-              @clear="clearDateRange"
-            >
-              <template v-slot:prepend>
-                <q-icon name="event" class="cursor-pointer" size="sm">
-                  <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                    <q-date
-                      v-model="dateRange"
-                      range
-                      mask="YYYY-MM-DD"
-                    >
-                      <div class="row items-center justify-end">
-                        <q-btn v-close-popup label="OK" color="primary" flat />
-                      </div>
-                    </q-date>
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
-            </q-input>
-          </div>
-
-          <div class="col-auto">
-            <q-btn
-              color="primary"
-              icon="search"
-              dense
-              @click="applyFilters"
-              class="q-mr-xs"
-            />
-            <q-btn
-              color="grey"
-              icon="refresh"
-              dense
-              outline
-              @click="resetFilters"
-            />
-          </div>
-        </div>
-      </q-card-section>
+        </q-card-section>
+      </q-expansion-item>
     </q-card>
 
     <!-- Transactions List -->
@@ -544,11 +585,11 @@
 
             <!-- Row 2: Kategori & Tanggal -->
             <div class="row q-col-gutter-sm q-mb-sm">
-              <div class="col-7">
+              <div class="col-12">
                 <q-select
                   v-model="form.category"
                   label="Kategori *"
-                  :options="formCategoryOptions"
+                  :options="formCategoryOptionsFiltered"
                   emit-value
                   map-options
                   outlined
@@ -556,9 +597,13 @@
                   :rules="[val => !!val || 'Kategori wajib dipilih']"
                   :loading="formCategoriesLoading"
                   :disable="!form.type"
+                  use-input
+                  input-debounce="0"
+                  @filter="filterFormCategoryFn"
+                  behavior="menu"
                 />
               </div>
-              <div class="col-5">
+              <div class="col-12">
                 <q-input
                   v-model="form.transactionDate"
                   type="date"
@@ -638,25 +683,9 @@ const transactionStore = useTransactionStore()
 const summaryPeriod = ref('month')
 const summary = ref(null)
 
-const periodOptions = [
-  { label: 'Hari Ini', value: 'today' },
-  { label: 'Minggu', value: 'week' },
-  { label: 'Bulan', value: 'month' }
-]
+// periodOptions removed as we use inline options in template
 
-const periodLabel = computed(() => {
-  const today = new Date()
-  switch (summaryPeriod.value) {
-    case 'today':
-      return today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-    case 'week':
-      return 'Minggu Ini'
-    case 'month':
-      return today.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
-    default:
-      return ''
-  }
-})
+// periodLabel removed as it is no longer used in template
 
 const getDateRangeForPeriod = () => {
   const today = new Date()
@@ -716,6 +745,7 @@ const onPeriodChange = () => {
 
 // FAB visibility control
 const showFab = ref(true)
+const showFilters = ref(false) // New state for filter toggle
 const fabHiddenByScroll = ref(false)
 let lastScrollTop = 0
 let scrollTimeout = null
@@ -748,6 +778,7 @@ const showViewDialog = ref(false)
 const selectedTransaction = ref(null)
 const categoriesLoading = ref(false)
 const categoryOptions = ref([])
+const filteredCategoryOptions = ref([])
 
 // Form Dialog State
 const showFormDialog = ref(false)
@@ -756,6 +787,7 @@ const editingId = ref(null)
 const formSaving = ref(false)
 const formCategoriesLoading = ref(false)
 const formCategoryOptions = ref([])
+const formCategoryOptionsFiltered = ref([])
 const transactionFormRef = ref(null)
 
 // Helper function to get date string in local timezone (YYYY-MM-DD)
@@ -799,6 +831,7 @@ watch(() => form.value.type, async (newType) => {
 const loadFormCategories = async () => {
   if (!form.value.type) {
     formCategoryOptions.value = []
+    formCategoryOptionsFiltered.value = []
     return
   }
 
@@ -811,12 +844,15 @@ const loadFormCategories = async () => {
         label: cat.name,
         value: cat.name
       }))
+      formCategoryOptionsFiltered.value = formCategoryOptions.value
     } else {
       formCategoryOptions.value = []
+      formCategoryOptionsFiltered.value = []
     }
   } catch (error) {
     console.error('Error loading form categories:', error)
     formCategoryOptions.value = []
+    formCategoryOptionsFiltered.value = []
   } finally {
     formCategoriesLoading.value = false
   }
@@ -895,7 +931,34 @@ const saveTransaction = async () => {
     formSaving.value = false
   }
 }
-const filteredCategoryOptions = ref([])
+
+// Filter function for category dropdown (filter section)
+const filterCategoryFn = (val, update) => {
+  update(() => {
+    if (val === '') {
+      filteredCategoryOptions.value = categoryOptions.value
+    } else {
+      const needle = val.toLowerCase()
+      filteredCategoryOptions.value = categoryOptions.value.filter(
+        opt => opt.label.toLowerCase().includes(needle)
+      )
+    }
+  })
+}
+
+// Filter function for category dropdown (form section)
+const filterFormCategoryFn = (val, update) => {
+  update(() => {
+    if (val === '') {
+      formCategoryOptionsFiltered.value = formCategoryOptions.value
+    } else {
+      const needle = val.toLowerCase()
+      formCategoryOptionsFiltered.value = formCategoryOptions.value.filter(
+        opt => opt.label.toLowerCase().includes(needle)
+      )
+    }
+  })
+}
 
 const filters = reactive({
   search: '',

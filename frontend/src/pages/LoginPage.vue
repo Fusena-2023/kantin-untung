@@ -1,9 +1,9 @@
 <template>
   <q-layout view="lHh Lpr lFf">
     <q-page-container>
-      <q-page class="row window-height overflow-hidden bg-gradient-kantin">
+    <q-page class="row bg-gradient-kantin" style="min-height: 100vh">
         <!-- Left Side - Visual & Branding -->
-        <div class="col-md-6 gt-sm column justify-center items-center relative-position z-top">
+        <div class="col-md-6 gt-sm column justify-center items-center relative-position z-top" style="min-height: 100vh">
           <div class="text-center q-pa-xl text-white">
             <q-img src="~assets/logo-kantin.png" width="300px" class="q-mb-lg drop-shadow-lg" />
             <h1 class="text-h3 text-weight-bold q-my-md text-shadow">Kantin Untung</h1>
@@ -14,7 +14,7 @@
         </div>
 
         <!-- Right Side - Login Form -->
-        <div class="col-12 col-md-6 column justify-center items-center q-pa-lg relative-position">
+        <div class="col-12 col-md-6 column justify-center items-center q-pa-lg relative-position" style="min-height: 100vh">
            <!-- Glass Card Container -->
           <div class="glass-card full-width q-pa-xl" style="max-width: 480px">
             <!-- Mobile Header (Visible only on small screens) -->
@@ -22,8 +22,8 @@
               <q-img src="~assets/logo-kantin.png" width="120px" class="q-mb-md" />
             </div>
 
-            <div class="text-h4 text-weight-bold text-grey-9 q-mb-xs">Selamat Datang Kembali!</div>
-            <div class="text-subtitle1 text-grey-7 q-mb-xl">Masuk untuk mengelola kantinmu</div>
+            <div class="text-h4 text-weight-bold text-grey-9 q-mb-xs text-center">Selamat Datang Kembali!</div>
+            <div class="text-subtitle1 text-grey-7 q-mb-xl text-center">Masuk untuk mengelola kantinmu</div>
 
             <q-form @submit="onSubmit" @reset="onReset" greedy class="q-gutter-y-md">
               <q-input
@@ -89,7 +89,7 @@
             </q-form>
           </div>
           
-          <div class="absolute-bottom text-center q-pb-md text-caption text-white lt-md">
+          <div class="text-center q-py-md text-caption text-white lt-md">
             © 2026 Kantin Untung
           </div>
            <div class="absolute-bottom text-center q-pb-md text-caption text-grey-8 gt-sm">

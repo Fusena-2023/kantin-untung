@@ -47,6 +47,7 @@
             active-class="bg-orange-1 text-orange-9 text-weight-bold"
             class="rounded-borders q-mb-xs"
             v-if="isPemilik"
+            @click="closeDrawerIfMobile"
           >
             <q-item-section avatar>
               <q-icon name="dashboard" />
@@ -71,6 +72,7 @@
               to="/app/transactions" 
               active-class="bg-orange-1 text-orange-9 text-weight-bold"
               class="rounded-borders q-mb-xs q-pl-lg"
+              @click="closeDrawerIfMobile"
             >
               <q-item-section avatar>
                 <q-icon name="store" />
@@ -87,6 +89,7 @@
               to="/app/plate-counts" 
               active-class="bg-orange-1 text-orange-9 text-weight-bold"
               class="rounded-borders q-mb-xs q-pl-lg"
+              @click="closeDrawerIfMobile"
             >
               <q-item-section avatar>
                 <q-icon name="restaurant" />
@@ -118,6 +121,7 @@
                 to="/app/reports" 
                 active-class="bg-orange-1 text-orange-9 text-weight-bold"
                 class="rounded-borders q-mb-xs q-pl-lg"
+                @click="closeDrawerIfMobile"
               >
                 <q-item-section avatar>
                   <q-icon name="receipt_long" />
@@ -134,6 +138,7 @@
                 to="/app/plate-counts/report" 
                  active-class="bg-orange-1 text-orange-9 text-weight-bold"
                 class="rounded-borders q-mb-xs q-pl-lg"
+                @click="closeDrawerIfMobile"
               >
                 <q-item-section avatar>
                   <q-icon name="restaurant_menu" />
@@ -151,6 +156,7 @@
               to="/app/users"
                active-class="bg-orange-1 text-orange-9 text-weight-bold"
               class="rounded-borders q-mb-xs"
+              @click="closeDrawerIfMobile"
             >
               <q-item-section avatar>
                 <q-icon name="people" />
@@ -190,12 +196,22 @@
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useAuthStore } from 'src/stores/auth-store'
+import { useQuasar } from 'quasar'
 
 const authStore = useAuthStore()
+const $q = useQuasar()
 
 const leftDrawerOpen = ref(false)
 const layoutKey = ref(0) // Existing keys
 const drawerKey = ref(0)
+
+// Helper to close drawer on mobile after navigation
+const closeDrawerIfMobile = () => {
+  if ($q.screen.lt.md) {
+    leftDrawerOpen.value = false
+  }
+}
+
 
 // Existing computed properties
 const isAuthenticated = computed(() => authStore.isAuthenticated)
