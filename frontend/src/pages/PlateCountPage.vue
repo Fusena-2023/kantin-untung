@@ -7,12 +7,6 @@
           <h5 class="q-my-none">Jumlah Piring</h5>
           <p class="text-grey q-my-none">Pencatatan jumlah piring per shift</p>
         </div>
-        <q-btn
-          color="primary"
-          icon="add"
-          label="Input Data"
-          @click="openInputDialog()"
-        />
       </div>
 
       <!-- Period Summary Cards (hanya untuk pemilik) -->
@@ -109,108 +103,139 @@
         </q-card>
 
         <!-- Summary Cards -->
-        <div class="row q-col-gutter-md q-mb-sm">
-          <div class="col-12 col-md-4">
-            <q-card flat bordered class="bg-blue-1">
-              <q-card-section>
-                <div class="text-subtitle2 text-grey-7">Total Piring</div>
-                <div class="text-h5 text-primary">
-                  {{ periodSummary.totalPlates?.toLocaleString('id-ID') || 0 }}
-                </div>
-                <div class="text-caption text-grey-6">
-                  SGP: {{ periodSummary.totalSgpCount?.toLocaleString('id-ID') || 0 }} |
-                  Hirose: {{ periodSummary.totalHiroseCount?.toLocaleString('id-ID') || 0 }}
-                </div>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <div class="col-12 col-md-4">
-            <q-card flat bordered class="bg-green-1">
-              <q-card-section>
-                <div class="text-subtitle2 text-grey-7">Nilai Piring</div>
-                <div class="text-h5 text-positive">
-                  {{ formatCurrency(periodSummary.totalTransfer || 0) }}
-                </div>
-                <div class="text-caption text-grey-6">
-                  {{ periodSummary.recordCount || 0 }} data
-                </div>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <div class="col-12 col-md-4">
-            <q-card flat bordered class="bg-teal-1">
-              <q-card-section>
-                <div class="text-subtitle2 text-grey-7">Penghasilan Kotor</div>
-                <div class="text-h5 text-teal">
-                  {{ formatCurrency(periodSummary.totalNetIncome || 0) }}
-                </div>
-                <div class="text-caption text-grey-6">
-                  Pajak: {{ formatCurrency(periodSummary.totalIncomeTax || 0) }}
-                </div>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-
-        <!-- PENGEMBALIAN BERSIH - Card Utama -->
-        <div class="row q-col-gutter-md q-mb-sm">
-          <div class="col-12 col-md-8 offset-md-2">
-            <q-card class="bg-orange-2" style="border: 2px solid #FB8C00;">
-              <q-card-section class="text-center q-py-md">
-                <q-icon name="savings" size="28px" color="orange-9" class="q-mb-xs" />
-                <div class="text-subtitle2 text-orange-9 text-weight-medium">PENGEMBALIAN BERSIH</div>
-                <div class="text-h4 text-orange-10 text-weight-bold">
-                  {{ formatCurrency(periodSummary.totalNetReturn || 0) }}
-                </div>
-                <div class="text-caption text-orange-8">
-                  Pajak: {{ formatCurrency(periodSummary.totalReturnTax || 0) }}
-                </div>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-
-        <!-- Admin Fee and Final Income -->
         <div class="row q-col-gutter-md q-mb-md">
+          <!-- Total Piring -->
           <div class="col-12 col-md-4">
-            <q-card flat bordered class="bg-red-1">
+            <q-card class="dashboard-card no-shadow border-left-primary">
               <q-card-section>
-                <div class="text-subtitle2 text-grey-7">Admin Transfer Bank</div>
-                <div class="text-h5 text-negative">
-                  - {{ formatCurrency(periodSummary.totalAdminFee || 0) }}
+                <div class="row items-center no-wrap">
+                  <div class="col">
+                    <div class="text-caption text-grey-7 text-uppercase text-weight-bold">Total Piring</div>
+                    <div class="text-h4 text-primary q-mt-sm q-mb-xs">
+                      {{ periodSummary.totalPlates?.toLocaleString('id-ID') || 0 }}
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <q-avatar color="blue-1" text-color="blue" icon="tapas" rounded />
+                  </div>
                 </div>
-                <div class="text-caption text-grey-6">
-                  {{ periodSummary.weekCount || 0 }} minggu × Rp 2.900
+                <div class="text-caption text-grey-6 q-mt-sm">
+                  <span class="text-blue-9 text-weight-medium">SGP: {{ periodSummary.totalSgpCount?.toLocaleString('id-ID') || 0 }}</span>
+                  <q-separator vertical class="q-mx-sm inline-block" />
+                  <span class="text-purple-9 text-weight-medium">Hirose: {{ periodSummary.totalHiroseCount?.toLocaleString('id-ID') || 0 }}</span>
                 </div>
               </q-card-section>
             </q-card>
           </div>
 
+          <!-- Nilai Piring -->
           <div class="col-12 col-md-4">
-            <q-card flat bordered class="bg-cyan-1">
+            <q-card class="dashboard-card no-shadow border-left-positive">
               <q-card-section>
-                <div class="text-subtitle2 text-grey-7">Jumlah Ditransfer Pabrik</div>
-                <div class="text-h5 text-cyan text-weight-bold">
-                  {{ formatCurrency(amountFromFactory) }}
+                <div class="row items-center no-wrap">
+                  <div class="col">
+                    <div class="text-caption text-grey-7 text-uppercase text-weight-bold">Nilai Piring</div>
+                    <div class="text-h4 text-positive q-mt-sm q-mb-xs">
+                      {{ formatCurrency(periodSummary.totalTransfer || 0) }}
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <q-avatar color="green-1" text-color="green" icon="monetization_on" rounded />
+                  </div>
                 </div>
-                <div class="text-caption text-grey-6">
-                  Transfer - Pajak - Admin
+                <div class="text-caption text-grey-6 q-mt-sm">
+                  <q-icon name="receipt_long" size="14px" /> {{ periodSummary.recordCount || 0 }} data tercatat
                 </div>
               </q-card-section>
             </q-card>
           </div>
 
+          <!-- Penghasilan Kotor -->
           <div class="col-12 col-md-4">
-            <q-card flat bordered class="bg-light-green-2">
+            <q-card class="dashboard-card no-shadow border-left-teal">
               <q-card-section>
-                <div class="text-subtitle1 text-grey-7">Penghasilan Bersih Final</div>
-                <div class="text-h4 text-positive text-weight-bold">
-                  {{ formatCurrency(periodSummary.finalNetIncome || 0) }}
+                <div class="row items-center no-wrap">
+                  <div class="col">
+                    <div class="text-caption text-grey-7 text-uppercase text-weight-bold">Penghasilan Kotor</div>
+                    <div class="text-h4 text-teal q-mt-sm q-mb-xs">
+                      {{ formatCurrency(periodSummary.totalNetIncome || 0) }}
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <q-avatar color="teal-1" text-color="teal" icon="account_balance_wallet" rounded />
+                  </div>
                 </div>
-                <div class="text-caption text-grey-6">
-                  Penghasilan kotor - Admin transfer bank
+                <div class="text-caption text-grey-6 q-mt-sm">
+                  Pajak: <span class="text-weight-medium">{{ formatCurrency(periodSummary.totalIncomeTax || 0) }}</span>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+
+        <!-- Financial Summary Cards: Pengembalian, Transfer, and Final Income -->
+        <div v-if="periodSummary.recordCount > 0" class="row q-col-gutter-md q-mb-lg">
+          <!-- Pengembalian Bersih -->
+          <div class="col-12 col-md-4">
+            <q-card class="dashboard-card no-shadow border-left-orange">
+              <q-card-section>
+                <div class="row items-center no-wrap">
+                  <div class="col">
+                    <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Pengembalian Bersih</div>
+                    <div class="text-h5 text-orange-9 q-mt-xs q-mb-xs">
+                      {{ formatCurrency(periodSummary.totalNetReturn || 0) }}
+                    </div>
+                    <div class="text-caption text-orange-8">
+                      Sudah dipotong pajak Rp {{ formatCurrency(periodSummary.totalReturnTax || 0) }}
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <q-avatar color="orange-1" text-color="orange-9" icon="savings" rounded size="md" />
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+
+          <!-- Transfer Pabrik -->
+          <div class="col-12 col-md-4">
+            <q-card class="dashboard-card no-shadow border-left-cyan">
+              <q-card-section>
+                <div class="row items-center no-wrap">
+                  <div class="col">
+                    <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Transfer Pabrik</div>
+                    <div class="text-h5 text-cyan-9 q-mt-xs q-mb-xs">
+                      {{ formatCurrency(amountFromFactory) }}
+                    </div>
+                    <div class="text-caption text-cyan-8">
+                      Nilai Piring - Pajak - Admin
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <q-avatar color="cyan-1" text-color="cyan-9" icon="factory" rounded size="md" />
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+
+          <!-- Penghasilan Bersih Final -->
+          <div class="col-12 col-md-4">
+            <q-card class="dashboard-card shadow-2 border-left-green-gradient">
+              <q-card-section>
+                <div class="row items-center no-wrap">
+                  <div class="col">
+                    <div class="text-caption text-green-10 text-uppercase text-weight-bold">Penghasilan Bersih Final</div>
+                    <div class="text-h4 text-green-9 text-weight-bolder q-mt-xs q-mb-xs">
+                      {{ formatCurrency(periodSummary.finalNetIncome || 0) }}
+                    </div>
+                    <div class="text-caption text-green-8">
+                      Total yang masuk ke kantong
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <q-avatar class="bg-gradient-green text-white shadow-3" icon="check_circle" rounded size="lg" />
+                  </div>
                 </div>
               </q-card-section>
             </q-card>
@@ -406,7 +431,8 @@
                     outlined
                     dense
                     min="0"
-                    :rules="[val => val >= 0 || 'Tidak boleh negatif']"
+                    placeholder="0"
+                    :rules="[val => val === null || val >= 0 || 'Tidak boleh negatif']"
                   >
                     <template #prepend>
                       <q-icon name="restaurant" color="blue" />
@@ -421,7 +447,8 @@
                     outlined
                     dense
                     min="0"
-                    :rules="[val => val >= 0 || 'Tidak boleh negatif']"
+                    placeholder="0"
+                    :rules="[val => val === null || val >= 0 || 'Tidak boleh negatif']"
                   >
                     <template #prepend>
                       <q-icon name="restaurant" color="purple" />
@@ -564,6 +591,27 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <!-- Floating Action Button -->
+    <q-page-sticky position="bottom-right" :offset="[18, 18]">
+      <q-btn
+        fab
+        icon="add"
+        color="primary"
+        @click="openInputDialog()"
+        class="fab-button"
+        size="lg"
+      >
+        <q-tooltip
+          anchor="center left"
+          self="center right"
+          :offset="[10, 0]"
+          class="bg-primary text-subtitle2"
+        >
+          Input Data Piring
+        </q-tooltip>
+      </q-btn>
+    </q-page-sticky>
   </q-page>
 </template>
 
@@ -797,8 +845,8 @@ const groupedPlateCounts = computed(() => {
 const defaultForm = {
   date: new Date().toISOString().split('T')[0],
   shift: 'shift1',
-  sgpCount: 0,
-  hiroseCount: 0,
+  sgpCount: null,
+  hiroseCount: null,
   pricePerPlate: 9500,
   incomePerPlate: 7000,
   returnPerPlate: 2500,
@@ -1083,7 +1131,84 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.q-card {
-  border-radius: 8px;
+.dashboard-card {
+  border-radius: 12px;
+  background-color: white;
+  transition: all 0.3s ease;
 }
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.border-left-primary {
+  border-left: 4px solid #1976D2;
+}
+
+.border-left-positive {
+  border-left: 4px solid #21BA45;
+}
+
+.border-left-teal {
+  border-left: 4px solid #009688;
+}
+
+.border-left-negative {
+  border-left: 4px solid #C10015;
+}
+
+.border-left-cyan {
+  border-left: 4px solid #00BCD4;
+}
+
+.border-left-orange {
+  border-left: 4px solid #F57C00;
+}
+
+.border-left-green-gradient {
+  border-left: 4px solid #43A047;
+}
+
+.bg-gradient-orange {
+  background: linear-gradient(135deg, #F57C00 0%, #FF9800 100%);
+}
+
+.bg-gradient-green {
+  background: linear-gradient(135deg, #43A047 0%, #66BB6A 100%);
+}
+
+.decorative-circle-1 {
+  width: 150px;
+  height: 150px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  top: -50px;
+  right: -50px;
+}
+
+.decorative-circle-2 {
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  bottom: -30px;
+  left: -30px;
+}
+
+/* Floating Action Button */
+.fab-button {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab-button:hover {
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.fab-button:active {
+  transform: scale(0.95);
+}
+
 </style>

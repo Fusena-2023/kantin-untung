@@ -151,44 +151,64 @@
           <div class="row q-col-gutter-sm" v-if="summary">
             <!-- Pemasukan -->
             <div class="col-6 col-md-3">
-              <q-card flat bordered class="bg-green-1">
-                <q-card-section class="q-pa-sm text-center">
-                  <div class="text-caption text-grey-7">Pemasukan</div>
-                  <div class="text-subtitle1 text-weight-bold text-positive text-ellipsis">
-                    {{ formatCurrency(summary.totalIncome) }}
+              <q-card class="dashboard-card no-shadow border-left-positive">
+                <q-card-section class="q-pa-sm">
+                  <div class="row items-center no-wrap">
+                    <div class="col">
+                      <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Pemasukan</div>
+                      <div class="text-subtitle1 text-positive text-weight-bold q-mt-xs">{{ formatCurrency(summary.totalIncome) }}</div>
+                    </div>
+                    <div class="col-auto">
+                      <q-avatar color="green-1" text-color="positive" icon="trending_up" rounded size="sm" />
+                    </div>
                   </div>
                 </q-card-section>
               </q-card>
             </div>
             <!-- Pengeluaran -->
             <div class="col-6 col-md-3">
-              <q-card flat bordered class="bg-red-1">
-                <q-card-section class="q-pa-sm text-center">
-                  <div class="text-caption text-grey-7">Pengeluaran</div>
-                  <div class="text-subtitle1 text-weight-bold text-negative text-ellipsis">
-                    {{ formatCurrency(summary.totalExpense) }}
+              <q-card class="dashboard-card no-shadow border-left-negative">
+                <q-card-section class="q-pa-sm">
+                  <div class="row items-center no-wrap">
+                    <div class="col">
+                      <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Pengeluaran</div>
+                      <div class="text-subtitle1 text-negative text-weight-bold q-mt-xs">{{ formatCurrency(summary.totalExpense) }}</div>
+                    </div>
+                    <div class="col-auto">
+                      <q-avatar color="red-1" text-color="negative" icon="trending_down" rounded size="sm" />
+                    </div>
                   </div>
                 </q-card-section>
               </q-card>
             </div>
             <!-- Keuntungan -->
             <div class="col-6 col-md-3">
-              <q-card flat bordered class="bg-blue-1">
-                <q-card-section class="q-pa-sm text-center">
-                  <div class="text-caption text-grey-7">Keuntungan</div>
-                  <div class="text-subtitle1 text-weight-bold text-primary text-ellipsis">
-                    {{ formatCurrency(summary.profit) }}
+              <q-card class="dashboard-card no-shadow border-left-primary">
+                <q-card-section class="q-pa-sm">
+                  <div class="row items-center no-wrap">
+                    <div class="col">
+                      <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Keuntungan</div>
+                      <div class="text-subtitle1 text-primary text-weight-bold q-mt-xs">{{ formatCurrency(summary.profit) }}</div>
+                    </div>
+                    <div class="col-auto">
+                      <q-avatar color="blue-1" text-color="primary" icon="account_balance_wallet" rounded size="sm" />
+                    </div>
                   </div>
                 </q-card-section>
               </q-card>
             </div>
             <!-- Transaksi -->
             <div class="col-6 col-md-3">
-              <q-card flat bordered class="bg-purple-1">
-                <q-card-section class="q-pa-sm text-center">
-                  <div class="text-caption text-grey-7">Total Transaksi</div>
-                  <div class="text-subtitle1 text-weight-bold text-purple-9">
-                    {{ summary.count }}
+              <q-card class="dashboard-card no-shadow border-left-purple">
+                <q-card-section class="q-pa-sm">
+                  <div class="row items-center no-wrap">
+                    <div class="col">
+                      <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Total Transaksi</div>
+                      <div class="text-subtitle1 text-purple-9 text-weight-bold q-mt-xs">{{ summary.count }}</div>
+                    </div>
+                    <div class="col-auto">
+                      <q-avatar color="purple-1" text-color="purple-9" icon="receipt" rounded size="sm" />
+                    </div>
                   </div>
                 </q-card-section>
               </q-card>
@@ -1343,5 +1363,33 @@ onUnmounted(() => {
 .mini-fab:hover {
   opacity: 1;
   transform: scale(1.1);
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+  border-radius: 12px;
+  background-color: white;
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.border-left-positive {
+  border-left: 4px solid #21BA45;
+}
+
+.border-left-negative {
+  border-left: 4px solid #C10015;
+}
+
+.border-left-primary {
+  border-left: 4px solid #1976D2;
+}
+
+.border-left-purple {
+  border-left: 4px solid #9C27B0;
 }
 </style>

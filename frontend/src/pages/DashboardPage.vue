@@ -73,63 +73,79 @@
     <!-- Summary Cards -->
     <div class="row q-col-gutter-sm q-col-gutter-md-md q-mb-md">
       <div class="col-6 col-md-3">
-        <q-card flat bordered class="summary-card bg-green-1 full-height">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="row items-center q-mb-xs">
-              <q-icon name="trending_up" size="18px" color="positive" class="q-mr-xs" />
-              <div class="text-caption text-grey-7 ellipsis">Pemasukan</div>
-            </div>
-            <div class="text-subtitle1 text-md-h5 text-positive text-weight-bold">{{ formatCurrency(currentPeriodData.income) }}</div>
-            <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs ellipsis" :class="profitTrend.incomeColor" style="font-size: 10px;">
-              <q-icon :name="profitTrend.incomeIcon" size="12px" />
-              {{ profitTrend.incomePercent }}% bln lalu
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <div class="col-6 col-md-3">
-        <q-card flat bordered class="summary-card bg-red-1 full-height">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="row items-center q-mb-xs">
-              <q-icon name="trending_down" size="18px" color="negative" class="q-mr-xs" />
-              <div class="text-caption text-grey-7 ellipsis">Pengeluaran</div>
-            </div>
-            <div class="text-subtitle1 text-md-h5 text-negative text-weight-bold">{{ formatCurrency(currentPeriodData.expense) }}</div>
-            <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs ellipsis" :class="profitTrend.expenseColor" style="font-size: 10px;">
-              <q-icon :name="profitTrend.expenseIcon" size="12px" />
-              {{ profitTrend.expensePercent }}% bln lalu
+        <q-card class="dashboard-card no-shadow border-left-positive">
+          <q-card-section>
+            <div class="row items-center no-wrap">
+              <div class="col">
+                <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Pemasukan</div>
+                <div class="text-h5 text-positive q-mt-xs q-mb-xs">{{ formatCurrency(currentPeriodData.income) }}</div>
+                <div v-if="selectedPeriod === 'month'" class="text-caption" :class="profitTrend.incomeColor">
+                  <q-icon :name="profitTrend.incomeIcon" size="12px" />
+                  {{ profitTrend.incomePercent }}% bln lalu
+                </div>
+              </div>
+              <div class="col-auto">
+                <q-avatar color="green-1" text-color="positive" icon="trending_up" rounded size="md" />
+              </div>
             </div>
           </q-card-section>
         </q-card>
       </div>
 
       <div class="col-6 col-md-3">
-        <q-card flat bordered class="summary-card bg-blue-1 full-height">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="row items-center q-mb-xs">
-              <q-icon name="account_balance_wallet" size="18px" color="primary" class="q-mr-xs" />
-              <div class="text-caption text-grey-7 ellipsis">Keuntungan</div>
+        <q-card class="dashboard-card no-shadow border-left-negative">
+          <q-card-section>
+            <div class="row items-center no-wrap">
+              <div class="col">
+                <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Pengeluaran</div>
+                <div class="text-h5 text-negative q-mt-xs q-mb-xs">{{ formatCurrency(currentPeriodData.expense) }}</div>
+                <div v-if="selectedPeriod === 'month'" class="text-caption" :class="profitTrend.expenseColor">
+                  <q-icon :name="profitTrend.expenseIcon" size="12px" />
+                  {{ profitTrend.expensePercent }}% bln lalu
+                </div>
+              </div>
+              <div class="col-auto">
+                <q-avatar color="red-1" text-color="negative" icon="trending_down" rounded size="md" />
+              </div>
             </div>
-            <div class="text-subtitle1 text-md-h5 text-primary text-weight-bold">{{ formatCurrency(currentPeriodData.profit) }}</div>
-            <div v-if="selectedPeriod === 'month'" class="text-caption q-mt-xs ellipsis" :class="profitTrend.profitColor" style="font-size: 10px;">
-              <q-icon :name="profitTrend.profitIcon" size="12px" />
-              {{ profitTrend.profitPercent }}% bln lalu
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <q-card class="dashboard-card no-shadow border-left-primary">
+          <q-card-section>
+            <div class="row items-center no-wrap">
+              <div class="col">
+                <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Keuntungan</div>
+                <div class="text-h5 text-primary q-mt-xs q-mb-xs">{{ formatCurrency(currentPeriodData.profit) }}</div>
+                <div v-if="selectedPeriod === 'month'" class="text-caption" :class="profitTrend.profitColor">
+                  <q-icon :name="profitTrend.profitIcon" size="12px" />
+                  {{ profitTrend.profitPercent }}% bln lalu
+                </div>
+              </div>
+              <div class="col-auto">
+                <q-avatar color="blue-1" text-color="primary" icon="account_balance_wallet" rounded size="md" />
+              </div>
             </div>
           </q-card-section>
         </q-card>
       </div>
 
       <div v-if="authStore.user?.role === 'pemilik'" class="col-6 col-md-3">
-        <q-card flat bordered class="summary-card bg-orange-1 full-height">
-          <q-card-section class="q-pa-sm q-pa-md-md">
-            <div class="row items-center q-mb-xs">
-              <q-icon name="receipt" size="18px" color="orange" class="q-mr-xs" />
-              <div class="text-caption text-grey-7 ellipsis">Total Transaksi</div>
-            </div>
-            <div class="text-subtitle1 text-md-h5 text-orange-9 text-weight-bold">{{ currentPeriodData.transactions }}</div>
-            <div class="text-caption q-mt-xs text-grey-6 ellipsis" style="font-size: 10px;">
-              {{ currentPeriodData.transactions }} transaksi
+        <q-card class="dashboard-card no-shadow border-left-orange">
+          <q-card-section>
+            <div class="row items-center no-wrap">
+              <div class="col">
+                <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Total Transaksi</div>
+                <div class="text-h5 text-orange-9 q-mt-xs q-mb-xs">{{ currentPeriodData.transactions }}</div>
+                <div class="text-caption text-grey-6">
+                  {{ currentPeriodData.transactions }} transaksi
+                </div>
+              </div>
+              <div class="col-auto">
+                <q-avatar color="orange-1" text-color="orange-9" icon="receipt" rounded size="md" />
+              </div>
             </div>
           </q-card-section>
         </q-card>
@@ -185,331 +201,98 @@
           </div>
         </div>
 
-        <!-- Total Piring -->
-        <div class="col-6 col-md-3">
-          <q-card flat bordered class="summary-card bg-deep-orange-1 full-height">
-            <q-card-section class="q-pa-sm q-pa-md-md">
-              <div class="row items-center q-mb-xs">
-                <q-icon name="dinner_dining" size="18px" color="deep-orange" class="q-mr-xs" />
-                <div class="text-caption text-grey-7 ellipsis">Total Piring</div>
-              </div>
-              <div class="text-subtitle1 text-md-h5 text-deep-orange-9 text-weight-bold">{{ cateringData.totalPlates?.toLocaleString('id-ID') || 0 }}</div>
-              <div class="text-caption q-mt-xs text-grey-6 ellipsis" style="font-size: 10px;">
-                Terjual
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
+        <!-- Catering Summary Cards (only show when data exists) -->
+        <template v-if="cateringData.totalPlates > 0">
+          <!-- Pengembalian Bersih -->
+          <div class="col-12 col-md-4">
+            <q-card class="dashboard-card no-shadow border-left-orange">
+              <q-card-section>
+                <div class="row items-center no-wrap">
+                  <div class="col">
+                    <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Pengembalian Bersih</div>
+                    <div class="text-h5 text-orange-9 q-mt-xs q-mb-xs">
+                      {{ formatCurrency(cateringData.totalNetReturn || 0) }}
+                    </div>
+                    <div class="text-caption text-orange-8">
+                      Sudah dipotong pajak
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <q-avatar color="orange-1" text-color="orange-9" icon="savings" rounded size="md" />
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
 
-        <!-- Jumlah Ditransfer Pabrik -->
-        <div class="col-6 col-md-3">
-          <q-card flat bordered class="summary-card bg-cyan-1 full-height">
-            <q-card-section class="q-pa-sm q-pa-md-md">
-              <div class="row items-center q-mb-xs">
-                <q-icon name="payments" size="18px" color="cyan" class="q-mr-xs" />
-                <div class="text-caption text-grey-7 ellipsis">Transfer Pabrik</div>
-              </div>
-              <div class="text-subtitle1 text-md-h5 text-cyan-9 text-weight-bold">{{ formatCurrency(amountFromFactory) }}</div>
-              <div class="text-caption q-mt-xs text-grey-6 ellipsis" style="font-size: 10px;">
-                -Pajak -Admin
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
+          <!-- Transfer Pabrik -->
+          <div class="col-12 col-md-4">
+            <q-card class="dashboard-card no-shadow border-left-cyan">
+              <q-card-section>
+                <div class="row items-center no-wrap">
+                  <div class="col">
+                    <div class="text-caption text-grey-8 text-uppercase text-weight-bold">Transfer Pabrik</div>
+                    <div class="text-h5 text-cyan-9 q-mt-xs q-mb-xs">
+                      {{ formatCurrency(amountFromFactory) }}
+                    </div>
+                    <div class="text-caption text-cyan-8">
+                      Nilai Piring - Pajak - Admin
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <q-avatar color="cyan-1" text-color="cyan-9" icon="factory" rounded size="md" />
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
 
-        <!-- Pengembalian Bersih -->
-        <div class="col-6 col-md-3">
-          <q-card flat bordered class="summary-card bg-indigo-1 full-height">
-            <q-card-section class="q-pa-sm q-pa-md-md">
-              <div class="row items-center q-mb-xs">
-                <q-icon name="savings" size="18px" color="indigo" class="q-mr-xs" />
-                <div class="text-caption text-grey-7 ellipsis">Return Bersih</div>
-              </div>
-              <div class="text-subtitle1 text-md-h5 text-indigo-9 text-weight-bold">{{ formatCurrency(cateringData.totalNetReturn || 0) }}</div>
-              <div class="text-caption q-mt-xs text-grey-6 ellipsis" style="font-size: 10px;">
-                Total return
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <!-- Penghasilan Bersih Final -->
-        <div class="col-6 col-md-3">
-          <q-card flat bordered class="summary-card bg-teal-1 full-height">
-            <q-card-section class="q-pa-sm q-pa-md-md">
-              <div class="row items-center q-mb-xs">
-                <q-icon name="account_balance" size="18px" color="teal" class="q-mr-xs" />
-                <div class="text-caption text-grey-7 ellipsis">Penghasilan</div>
-              </div>
-              <div class="text-subtitle1 text-md-h5 text-teal-9 text-weight-bold">{{ formatCurrency(cateringData.finalNetIncome || 0) }}</div>
-              <div class="text-caption q-mt-xs text-grey-6 ellipsis" style="font-size: 10px;">
-                Final - Admin
-              </div>
-            </q-card-section>
-          </q-card>
-        </div>
+          <!-- Penghasilan Bersih Final -->
+          <div class="col-12 col-md-4">
+            <q-card class="dashboard-card shadow-2 border-left-green-gradient">
+              <q-card-section>
+                <div class="row items-center no-wrap">
+                  <div class="col">
+                    <div class="text-caption text-green-10 text-uppercase text-weight-bold">Penghasilan Bersih Final</div>
+                    <div class="text-h4 text-green-9 text-weight-bolder q-mt-xs q-mb-xs">
+                      {{ formatCurrency(cateringData.finalNetIncome || 0) }}
+                    </div>
+                    <div class="text-caption text-green-8">
+                      Total yang masuk ke kantong
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <q-avatar class="bg-gradient-green text-white shadow-3" icon="check_circle" rounded size="lg" />
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </template>
       </template>
     </div>
 
-    <!-- Grafik Pemasukan vs Pengeluaran (Collapsible) -->
-    <q-expansion-item
-      class="shadow-1 overflow-hidden q-mb-md rounded-borders bg-white"
-      icon="show_chart"
-      label="Tren Keuangan 7 Hari Terakhir"
-      header-class="bg-grey-2 text-grey-9 text-weight-bold"
-      default-opened
-    >
-      <q-card flat>
-        <q-card-section class="q-pa-md bg-grey-1">
-          <div class="row items-center justify-end">
-            <div class="q-gutter-xs">
-              <q-btn-group outline>
-                <q-btn 
-                  :color="chartFilter === 'all' ? 'primary' : 'grey-5'" 
-                  :outline="chartFilter !== 'all'"
-                  label="Semua" 
-                  size="sm" 
-                  no-caps 
-                  @click="chartFilter = 'all'"
-                />
-                <q-btn 
-                  :color="chartFilter === 'transaction' ? 'primary' : 'grey-5'" 
-                  :outline="chartFilter !== 'transaction'"
-                  label="Transaksi" 
-                  size="sm" 
-                  no-caps 
-                  @click="chartFilter = 'transaction'"
-                />
-                <q-btn 
-                  :color="chartFilter === 'catering' ? 'primary' : 'grey-5'" 
-                  :outline="chartFilter !== 'catering'"
-                  label="Catering" 
-                  size="sm" 
-                  no-caps 
-                  @click="chartFilter = 'catering'"
-                />
-              </q-btn-group>
-            </div>
-          </div>
-        </q-card-section>
-        <q-card-section class="q-pa-md">
-          <div v-if="dashboard?.dailyData?.length" style="position: relative; height: 300px;">
-            <canvas ref="chartCanvas"></canvas>
-          </div>
-          <div v-else class="text-center text-grey-5 q-py-xl">
-            <q-icon name="timeline" size="64px" class="q-mb-md" />
-            <div class="text-subtitle1">Belum ada data grafik</div>
-          </div>
-        </q-card-section>
-      </q-card>
-    </q-expansion-item>
 
-    <!-- Content Area with Modern Layout -->
-    <div class="row q-col-gutter-sm q-col-gutter-md-md">
-      <!-- Main Content (Full width on mobile, 8 cols on desktop) -->
-      <div class="col-12 col-md-8">
-        <!-- Breakdown per Kategori (Collapsible) -->
-        <q-expansion-item
-          class="shadow-1 overflow-hidden q-mb-md rounded-borders bg-white"
-          icon="category"
-          label="Breakdown per Kategori"
-          header-class="bg-grey-2 text-grey-9 text-weight-bold"
-          default-opened
-        >
-          <q-card flat>
-            <q-card-section class="q-pa-none">
-              <q-table
-                v-if="categoryBreakdown.length"
-                :rows="categoryBreakdown"
-                :columns="categoryColumns"
-                row-key="category"
-                flat
-                bordered
-                no-data-label="Belum ada data kategori"
-                class="category-table"
-              >
-                <template v-slot:body-cell-pemasukan="props">
-                  <q-td :props="props" class="text-positive text-weight-bold">
-                    {{ formatCurrency(props.row.income) }}
-                  </q-td>
-                </template>
-                <template v-slot:body-cell-pengeluaran="props">
-                  <q-td :props="props" class="text-negative text-weight-bold">
-                    {{ formatCurrency(props.row.expense) }}
-                  </q-td>
-                </template>
-              </q-table>
-              <div v-else class="text-center text-grey-5 q-py-xl">
-                <q-icon name="category" size="64px" class="q-mb-md" />
-                <div class="text-subtitle1">Belum ada data kategori</div>
-              </div>
-            </q-card-section>
-          </q-card>
-        </q-expansion-item>
-
-        <!-- Transaksi Terbaru (Collapsible) -->
-        <q-expansion-item
-          class="shadow-1 overflow-hidden q-mb-md rounded-borders bg-white"
-          icon="history"
-          label="Transaksi Terbaru"
-          header-class="bg-grey-2 text-grey-9 text-weight-bold"
-          default-opened
-        >
-          <q-card flat>
-            <q-card-section class="q-pa-none">
-              <q-list v-if="dashboard?.recentTransactions?.length" separator class="transaction-list">
-                <q-item
-                  v-for="transaction in dashboard.recentTransactions"
-                  :key="transaction.id + '-' + transaction.type"
-                  class="q-pa-md"
-                >
-                  <q-item-section avatar>
-                    <q-avatar
-                      size="48px"
-                      :class="transaction.type === 'catering' ? 'avatar-catering' : (transaction.activityType === 'masuk' ? 'avatar-income' : 'avatar-expense')"
-                      text-color="white"
-                    >
-                      <q-icon
-                        :name="transaction.type === 'catering' ? 'restaurant' : (transaction.activityType === 'masuk' ? 'trending_up' : 'trending_down')"
-                        size="24px"
-                      />
-                    </q-avatar>
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label class="text-subtitle1 text-weight-medium">
-                      {{ transaction.description || 'Tidak ada deskripsi' }}
-                    </q-item-label>
-                    <q-item-label caption class="text-body2 text-grey-7">
-                      <q-icon name="label" size="14px" class="q-mr-xs" />
-                      {{ transaction.category }}
-                    </q-item-label>
-                  </q-item-section>
-                  <q-item-section side class="text-right">
-                    <q-item-label
-                      class="text-h6 text-weight-bold"
-                      :class="transaction.type === 'catering' ? 'text-cyan-9' : (transaction.activityType === 'masuk' ? 'text-positive' : 'text-negative')"
-                    >
-                      {{ transaction.activityType === 'masuk' ? '+' : '-' }}{{ formatCurrency(transaction.amount) }}
-                    </q-item-label>
-                    <q-item-label caption class="text-grey-6">
-                      <q-icon name="schedule" size="14px" class="q-mr-xs" />
-                      {{ formatDate(transaction.date || transaction.created_at) }}
-                    </q-item-label>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-              <div v-else class="text-center text-grey-5 q-py-xl">
-                <q-icon name="inbox" size="64px" class="q-mb-md" />
-                <div class="text-subtitle1">Belum ada transaksi</div>
-              </div>
-            </q-card-section>
-          </q-card>
-        </q-expansion-item>
-      </div>
-
-      <!-- Sidebar Content (Full width on mobile, 4 cols on desktop) -->
-      <div class="col-12 col-md-4">
-        <!-- Ringkasan Bulanan (Collapsible) -->
-        <q-expansion-item
-          class="shadow-1 overflow-hidden q-mb-md rounded-borders bg-white"
-          icon="calendar_month"
-          label="Ringkasan Bulanan"
-          header-class="bg-grey-2 text-grey-9 text-weight-bold"
-          default-opened
-        >
-          <q-card flat>
-            <q-card-section class="q-pa-md">
-              <div class="summary-item q-mb-md">
-                <div class="row items-center q-mb-xs">
-                  <q-icon name="arrow_upward" color="positive" size="20px" class="q-mr-xs" />
-                  <span class="text-caption text-grey-7">Pemasukan</span>
-                </div>
-                <div class="text-h5 text-positive text-weight-bold">
-                  {{ formatCurrency(dashboard?.thisMonth?.income || 0) }}
-                </div>
-              </div>
-              <q-separator class="q-my-md" />
-              <div class="summary-item q-mb-md">
-                <div class="row items-center q-mb-xs">
-                  <q-icon name="arrow_downward" color="negative" size="20px" class="q-mr-xs" />
-                  <span class="text-caption text-grey-7">Pengeluaran</span>
-                </div>
-                <div class="text-h5 text-negative text-weight-bold">
-                  {{ formatCurrency(dashboard?.thisMonth?.expense || 0) }}
-                </div>
-              </div>
-              <q-separator class="q-my-md" />
-              <div class="summary-item">
-                <div class="row items-center q-mb-xs">
-                  <q-icon name="account_balance_wallet" color="info" size="20px" class="q-mr-xs" />
-                  <span class="text-caption text-grey-7">Keuntungan</span>
-                </div>
-                <div class="text-h5 text-info text-weight-bold">
-                  {{ formatCurrency(dashboard?.thisMonth?.profit || 0) }}
-                </div>
-              </div>
-            </q-card-section>
-          </q-card>
-        </q-expansion-item>
-      </div>
-    </div>
 
     </q-pull-to-refresh>
-
-    <!-- Floating Action Button -->
-    <q-page-sticky position="bottom-right" :offset="[18, 18]">
-      <q-btn
-        fab
-        icon="add"
-        color="primary"
-        to="/app/transactions/create"
-        class="fab-button"
-        size="lg"
-      >
-        <q-tooltip
-          anchor="center left"
-          self="center right"
-          :offset="[10, 0]"
-          class="bg-primary text-subtitle2"
-        >
-          Tambah Transaksi Baru
-        </q-tooltip>
-      </q-btn>
-    </q-page-sticky>
   </q-page>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch, nextTick } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useReportStore } from 'stores/report-store'
 import { useAuthStore } from 'stores/auth-store'
-import { plateCountService } from 'src/services/plateCount' // Import plateCountService directly
-import { formatCurrency, formatDate } from 'src/utils/format'
-import { Chart, registerables } from 'chart.js'
-
-// Register all Chart.js components
-Chart.register(...registerables)
+import { plateCountService } from 'src/services/plateCount'
+import { formatCurrency } from 'src/utils/format'
 
 const reportStore = useReportStore()
 const authStore = useAuthStore()
-const chartCanvas = ref(null)
-let chartInstance = null
 
 const dashboard = computed(() => reportStore.dashboard)
 const selectedPeriod = ref('month')
-const chartFilter = ref('all') // 'all', 'transaction', 'catering'
 const customStartDate = ref('')
 const customEndDate = ref('')
 
-// Category table columns
-const categoryColumns = [
-  { name: 'kategori', label: 'Kategori', field: 'category', align: 'left' },
-  { name: 'jumlah', label: 'Jumlah', field: 'count', align: 'center' },
-  { name: 'pemasukan', label: 'Pemasukan', field: 'income', align: 'right' },
-  { name: 'pengeluaran', label: 'Pengeluaran', field: 'expense', align: 'right' }
-]
-
-// Get current period data
 const currentPeriodData = computed(() => {
   const data = dashboard.value
   const defaultCatering = {
@@ -606,14 +389,6 @@ const profitTrend = computed(() => {
     profitIcon: profitPercent >= 0 ? 'trending_up' : 'trending_down',
     profitColor: profitPercent >= 0 ? 'text-positive' : 'text-negative'
   }
-})
-
-// Category breakdown
-const categoryBreakdown = computed(() => {
-  const data = dashboard.value
-  if (!data || !data.byCategory) return []
-  // Filter out catering from this table as requested
-  return data.byCategory.filter(c => c.category !== 'Catering')
 })
 
 const onRefresh = async (done) => {
@@ -726,188 +501,11 @@ const fetchCateringData = async () => {
 const fetchData = async () => {
   try {
     await reportStore.fetchDashboard()
-    await nextTick()
-    renderChart()
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error)
   }
 }
 
-const renderChart = () => {
-  if (!chartCanvas.value || !dashboard.value?.dailyData?.length) {
-    console.log('Chart render skipped:', {
-      hasCanvas: !!chartCanvas.value,
-      hasData: !!dashboard.value?.dailyData?.length,
-      data: dashboard.value?.dailyData
-    })
-    return
-  }
-
-  // Destroy existing chart
-  if (chartInstance) {
-    chartInstance.destroy()
-  }
-
-  const ctx = chartCanvas.value.getContext('2d')
-  const dailyData = dashboard.value.dailyData // Don't reverse, backend already sends in correct order
-
-  const labels = dailyData.map(d => {
-    const date = new Date(d.date)
-    return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })
-  })
-
-  const incomeData = dailyData.map(d => d.income || 0)
-  const expenseData = dailyData.map(d => d.expense || 0)
-  const cateringData = dailyData.map(d => d.catering || 0)
-
-  console.log('Rendering chart with data:', { labels, incomeData, expenseData, cateringData })
-  
-  const datasets = []
-
-  // Dataset Income (Transaction)
-  if (chartFilter.value === 'all' || chartFilter.value === 'transaction') {
-    datasets.push({
-      label: 'Pemasukan',
-      data: incomeData,
-      borderColor: '#38ef7d',
-      backgroundColor: 'rgba(56, 239, 125, 0.1)',
-      borderWidth: 3,
-      tension: 0.4,
-      fill: true,
-      pointRadius: 5,
-      pointHoverRadius: 7,
-      pointBackgroundColor: '#38ef7d',
-      pointBorderColor: '#fff',
-      pointBorderWidth: 2
-    })
-    
-    datasets.push({
-      label: 'Pengeluaran',
-      data: expenseData,
-      borderColor: '#ff6a00',
-      backgroundColor: 'rgba(255, 106, 0, 0.1)',
-      borderWidth: 3,
-      tension: 0.4,
-      fill: true,
-      pointRadius: 5,
-      pointHoverRadius: 7,
-      pointBackgroundColor: '#ff6a00',
-      pointBorderColor: '#fff',
-      pointBorderWidth: 2
-    })
-  }
-
-  // Dataset Catering
-  if (chartFilter.value === 'all' || chartFilter.value === 'catering') {
-    datasets.push({
-      label: 'Catering (Net)',
-      data: cateringData,
-      borderColor: '#06b6d4', // Cyan
-      backgroundColor: 'rgba(6, 182, 212, 0.1)',
-      borderWidth: 3,
-      tension: 0.4,
-      fill: true,
-      pointRadius: 5,
-      pointHoverRadius: 7,
-      pointBackgroundColor: '#06b6d4',
-      pointBorderColor: '#fff',
-      pointBorderWidth: 2
-    })
-  }
-
-  chartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
-      plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: {
-            usePointStyle: true,
-            padding: 15,
-            font: {
-              size: 12,
-              weight: '500'
-            }
-          }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          padding: 12,
-          cornerRadius: 8,
-          titleFont: {
-            size: 14,
-            weight: 'bold'
-          },
-          bodyFont: {
-            size: 13
-          },
-          callbacks: {
-            label: function(context) {
-              let label = context.dataset.label || ''
-              if (label) {
-                label += ': '
-              }
-              label += formatCurrency(context.parsed.y)
-              return label
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: function(value) {
-              if (value === 0) return 'Rp 0'
-              return 'Rp ' + (value / 1000000).toFixed(1) + 'jt'
-            },
-            font: {
-              size: 11
-            }
-          },
-          grid: {
-            color: 'rgba(0, 0, 0, 0.05)'
-          }
-        },
-        x: {
-          grid: {
-            display: false
-          },
-          ticks: {
-            font: {
-              size: 11
-            }
-          }
-        }
-      }
-    }
-  })
-
-  console.log('Chart instance created:', chartInstance)
-}
-
-// Watch for chart filter
-watch(chartFilter, () => {
-  if (dashboard.value?.dailyData) {
-    nextTick(() => renderChart())
-  }
-})
-
-// Watch for dashboard data changes
-watch(() => dashboard.value?.dailyData, () => {
-  nextTick(() => renderChart())
-}, { deep: true })
 
 onMounted(() => {
   fetchData()
@@ -1003,7 +601,49 @@ onMounted(() => {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
+
 .fab-button:active {
   transform: scale(0.95);
 }
+
+/* Dashboard Cards - Matching PlateCountPage */
+.dashboard-card {
+  border-radius: 12px;
+  background-color: white;
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.border-left-positive {
+  border-left: 4px solid #21BA45;
+}
+
+.border-left-negative {
+  border-left: 4px solid #C10015;
+}
+
+.border-left-primary {
+  border-left: 4px solid #1976D2;
+}
+
+.border-left-orange {
+  border-left: 4px solid #F57C00;
+}
+
+.border-left-cyan {
+  border-left: 4px solid #00BCD4;
+}
+
+.border-left-green-gradient {
+  border-left: 4px solid #43A047;
+}
+
+.bg-gradient-green {
+  background: linear-gradient(135deg, #43A047 0%, #66BB6A 100%);
+}
+
 </style>
