@@ -174,6 +174,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
 import { useTransactionStore } from 'stores/transaction-store'
 import categoryService from 'src/services/category'
@@ -181,6 +182,7 @@ import { dateToIndonesian } from 'src/utils/format'
 
 const router = useRouter()
 const route = useRoute()
+const $q = useQuasar()
 const transactionStore = useTransactionStore()
 
 const transactionForm = ref(null)
@@ -305,8 +307,7 @@ const loadTransaction = async () => {
       transactionDate: transactionDateTime.toISOString().split('T')[0]
     }
   } catch (error) {
-    // Simple alert instead of $q.notify
-    alert(error)
+    $q.notify({ type: 'negative', message: typeof error === 'string' ? error : 'Gagal memuat data transaksi', position: 'top' })
     router.back()
   } finally {
     isLoading.value = false
@@ -355,12 +356,10 @@ const onSubmit = async () => {
 
     if (isEdit.value) {
       await transactionStore.updateTransaction(transactionId.value, transactionData)
-      // Simple alert instead of $q.notify
-      alert('Transaksi berhasil diupdate')
+      $q.notify({ type: 'positive', message: 'Transaksi berhasil diupdate', position: 'top' })
     } else {
       await transactionStore.createTransaction(transactionData)
-      // Simple alert instead of $q.notify
-      alert('Transaksi berhasil dibuat')
+      $q.notify({ type: 'positive', message: 'Transaksi berhasil dibuat', position: 'top' })
     }
 
     // Direct navigation to transactions page
@@ -369,7 +368,7 @@ const onSubmit = async () => {
     console.error('Submit error:', error)
     // Show error message
     const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Gagal menyimpan transaksi'
-    alert(errorMsg)
+    $q.notify({ type: 'negative', message: errorMsg, position: 'top' })
   } finally {
     isLoading.value = false
   }

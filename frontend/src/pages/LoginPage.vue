@@ -103,8 +103,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useQuasar } from 'quasar'
 import { useAuthStore } from 'stores/auth-store'
 
+const $q = useQuasar()
 const authStore = useAuthStore()
 
 const form = ref({
@@ -135,7 +137,7 @@ const onSubmit = async () => {
 
   } catch (error) {
     console.error('Login error:', error)
-    alert(typeof error === 'string' ? error : 'Login gagal')
+    $q.notify({ type: 'negative', message: typeof error === 'string' ? error : 'Login gagal', position: 'top' })
   }
 }
 

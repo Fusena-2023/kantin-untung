@@ -690,12 +690,14 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
+import { useQuasar } from 'quasar'
 import { useAuthStore } from 'stores/auth-store'
 import { useTransactionStore } from 'stores/transaction-store'
 import { formatCurrency, formatDateOnly, formatDateShort, formatDateFull, formatTime } from 'src/utils/format'
 import categoryService from 'src/services/category'
 import reportService from 'src/services/report'
 
+const $q = useQuasar()
 const authStore = useAuthStore()
 const transactionStore = useTransactionStore()
 
@@ -902,7 +904,7 @@ const saveTransaction = async () => {
 
     // Validate form
     if (!form.value.type || !form.value.category || !form.value.amount || !form.value.transactionDate) {
-      alert('Mohon lengkapi semua field yang wajib diisi')
+      $q.notify({ type: 'warning', message: 'Mohon lengkapi semua field yang wajib diisi', position: 'top' })
       return
     }
 
@@ -933,10 +935,10 @@ const saveTransaction = async () => {
 
     if (isEditing.value) {
       await transactionStore.updateTransaction(editingId.value, transactionData)
-      alert('Transaksi berhasil diupdate')
+      $q.notify({ type: 'positive', message: 'Transaksi berhasil diupdate', position: 'top' })
     } else {
       await transactionStore.createTransaction(transactionData)
-      alert('Transaksi berhasil dibuat')
+      $q.notify({ type: 'positive', message: 'Transaksi berhasil dibuat', position: 'top' })
     }
 
     showFormDialog.value = false
@@ -946,7 +948,7 @@ const saveTransaction = async () => {
   } catch (error) {
     console.error('Save error:', error)
     const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Gagal menyimpan transaksi'
-    alert(errorMsg)
+    $q.notify({ type: 'negative', message: errorMsg, position: 'top' })
   } finally {
     formSaving.value = false
   }
@@ -1237,7 +1239,7 @@ const fetchTransactions = async () => {
     }
   } catch (error) {
     console.error('Fetch transactions error:', error)
-    alert(typeof error === 'string' ? error : 'Gagal mengambil data transaksi')
+    $q.notify({ type: 'negative', message: typeof error === 'string' ? error : 'Gagal mengambil data transaksi', position: 'top' })
   }
 }
 
@@ -1281,20 +1283,24 @@ const editTransaction = async (transaction) => {
   showFormDialog.value = true
 }
 
-const deleteTransaction = async (transaction) => {
-  const confirmDelete = confirm('Apakah Anda yakin ingin menghapus transaksi ini?')
-
-  if (confirmDelete) {
+const deleteTransaction = (transaction) => {
+  $q.dialog({
+    title: 'Konfirmasi Hapus',
+    message: 'Apakah Anda yakin ingin menghapus transaksi ini?',
+    cancel: { label: 'Batal', flat: true, color: 'grey-7' },
+    ok: { label: 'Hapus', unelevated: true, color: 'negative' },
+    persistent: true
+  }).onOk(async () => {
     try {
       await transactionStore.deleteTransaction(transaction.id)
-      alert('Transaksi berhasil dihapus')
+      $q.notify({ type: 'positive', message: 'Transaksi berhasil dihapus', position: 'top' })
       // Refresh data after delete
       await fetchTransactions()
     } catch (error) {
       console.error('Delete error:', error)
-      alert(typeof error === 'string' ? error : 'Gagal menghapus transaksi')
+      $q.notify({ type: 'negative', message: typeof error === 'string' ? error : 'Gagal menghapus transaksi', position: 'top' })
     }
-  }
+  })
 }
 
 onMounted(() => {

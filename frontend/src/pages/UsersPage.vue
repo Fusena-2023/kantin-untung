@@ -350,8 +350,6 @@ const showNotification = (options) => {
     }
   } catch (error) {
     console.error('Notification error:', error)
-    // Fallback to basic alert if all else fails
-    alert(`${options.color === 'positive' ? 'Success' : 'Error'}: ${options.message}`)
   }
 }
 
@@ -514,7 +512,7 @@ const editUser = (user) => {
   console.log('Edit form populated:', userForm)
 }
 
-const deleteUser = async (user) => {
+const deleteUser = (user) => {
   console.log('=== DELETE USER FUNCTION CALLED ===')
   console.log('Delete user clicked:', user)
 
@@ -531,44 +529,38 @@ const deleteUser = async (user) => {
 
   const userName = user.fullName || user.username || 'User tidak dikenal'
 
-  try {
-    console.log('Creating delete confirmation dialog...')
+  $q.dialog({
+    title: 'Konfirmasi Hapus',
+    message: `Apakah Anda yakin ingin menghapus user "${userName}"?`,
+    cancel: { label: 'Batal', flat: true, color: 'grey-7' },
+    ok: { label: 'Hapus', unelevated: true, color: 'negative' },
+    persistent: true
+  }).onOk(async () => {
+    try {
+      console.log('Delete confirmed for user:', user.id)
+      await UserService.deleteUser(user.id)
+      console.log('User deleted successfully')
 
-    // Use native confirm as fallback
-    const confirmed = confirm(`Apakah Anda yakin ingin menghapus user "${userName}"?`)
+      showNotification({
+        color: 'positive',
+        message: 'User berhasil dihapus',
+        icon: 'check',
+        position: 'top'
+      })
 
-    if (!confirmed) {
-      console.log('Delete cancelled by user')
-      return
+      console.log('Refreshing users list...')
+      await fetchUsers()
+      console.log('Users list refreshed')
+    } catch (error) {
+      console.error('Delete user error:', error)
+      showNotification({
+        color: 'negative',
+        message: typeof error === 'string' ? error : (error.message || 'Gagal menghapus user'),
+        icon: 'warning',
+        position: 'top'
+      })
     }
-
-    console.log('Delete confirmed for user:', user.id)
-    console.log('Calling UserService.deleteUser...')
-
-    await UserService.deleteUser(user.id)
-
-    console.log('User deleted successfully')
-
-    showNotification({
-      color: 'positive',
-      message: 'User berhasil dihapus',
-      icon: 'check',
-      position: 'top'
-    })
-
-    console.log('Refreshing users list...')
-    await fetchUsers()
-    console.log('Users list refreshed')
-
-  } catch (error) {
-    console.error('Delete user error:', error)
-    showNotification({
-      color: 'negative',
-      message: typeof error === 'string' ? error : (error.message || 'Gagal menghapus user'),
-      icon: 'warning',
-      position: 'top'
-    })
-  }
+  })
 }
 
 const handleSimpanClick = () => {
