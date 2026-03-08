@@ -1,9 +1,19 @@
 -- ============================================================
 -- Supabase Row Level Security (RLS) Setup
+-- 
 -- Jalankan script ini di: Supabase Dashboard > SQL Editor
+-- 
+-- KONTEKS APP INI:
+-- - Backend menggunakan Express + JWT sendiri (bukan Supabase Auth)
+-- - Backend terhubung via service_role key → otomatis bypass RLS
+-- - Client TIDAK akses Supabase langsung, selalu lewat Express API
+-- 
+-- SOLUSI: Enable RLS (deny-all by default untuk anon/PostgREST)
+-- Tidak perlu policy tambahan karena service_role sudah bypass RLS
 -- ============================================================
 
 -- Enable RLS pada semua tabel
+-- (deny-all untuk akses PostgREST langsung; service_role tetap bypass)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.plate_counts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
@@ -11,93 +21,19 @@ ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- Drop policy lama jika sudah ada (hindari duplikat)
+-- CATATAN PENTING:
+-- Setelah ALTER TABLE di atas, tidak ada policy yang dibuat.
+-- Ini berarti:
+--   ✅ anon/authenticated (PostgREST) → DIBLOKIR (deny-all)
+--   ✅ service_role (backend Express) → TETAP BISA AKSES (bypass RLS)
+--   ✅ Security warning di Supabase Dashboard → HILANG
 -- ============================================================
-DO $$
-BEGIN
-  -- users
-  IF EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'users' AND policyname = 'Allow all for service role'
-  ) THEN
-    DROP POLICY "Allow all for service role" ON public.users;
-  END IF;
-
-  -- plate_counts
-  IF EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'plate_counts' AND policyname = 'Allow all for service role'
-  ) THEN
-    DROP POLICY "Allow all for service role" ON public.plate_counts;
-  END IF;
-
-  -- categories
-  IF EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'categories' AND policyname = 'Allow all for service role'
-  ) THEN
-    DROP POLICY "Allow all for service role" ON public.categories;
-  END IF;
-
-  -- transactions
-  IF EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'transactions' AND policyname = 'Allow all for service role'
-  ) THEN
-    DROP POLICY "Allow all for service role" ON public.transactions;
-  END IF;
-
-  -- roles
-  IF EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'roles' AND policyname = 'Allow all for service role'
-  ) THEN
-    DROP POLICY "Allow all for service role" ON public.roles;
-  END IF;
-END $$;
-
--- ============================================================
--- Buat policy permissive untuk backend (koneksi via DB password)
--- Backend menggunakan role 'postgres' yang by default bypass RLS,
--- tetapi policy ini memastikan tidak ada block dari sisi Supabase
--- dan menghilangkan security warning di dashboard.
--- ============================================================
-
-CREATE POLICY "Allow all for service role" ON public.users
-  AS PERMISSIVE
-  FOR ALL
-  TO public
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Allow all for service role" ON public.plate_counts
-  AS PERMISSIVE
-  FOR ALL
-  TO public
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Allow all for service role" ON public.categories
-  AS PERMISSIVE
-  FOR ALL
-  TO public
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Allow all for service role" ON public.transactions
-  AS PERMISSIVE
-  FOR ALL
-  TO public
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Allow all for service role" ON public.roles
-  AS PERMISSIVE
-  FOR ALL
-  TO public
-  USING (true)
-  WITH CHECK (true);
 
 -- ============================================================
 -- Verifikasi: cek status RLS setelah dijalankan
+-- Semua kolom rls_enabled harus bernilai 'true'
 -- ============================================================
 SELECT
-  schemaname,
   tablename,
   rowsecurity AS rls_enabled
 FROM pg_tables
