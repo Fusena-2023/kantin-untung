@@ -8,7 +8,6 @@ class AuthService {
   async login(credentials) {
     const maxRetries = 2
 
-    let lastError
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const response = await api.post(`${this.baseURL}/login`, credentials, {
@@ -22,8 +21,6 @@ class AuthService {
         }
         throw new Error(response.data.message)
       } catch (error) {
-        lastError = error
-
         // Hanya retry untuk network/timeout errors, bukan auth errors
         const isRetryable = !error.response || error.code === 'ECONNABORTED'
         if (!isRetryable || attempt === maxRetries) {
