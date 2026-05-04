@@ -86,6 +86,17 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
     });
+
+    // ⚡ Keepalive ping setiap 4 menit untuk mencegah Supabase cold start
+    setInterval(async () => {
+      try {
+        await sequelize.query('SELECT 1');
+        console.log('🏓 Database keepalive ping OK');
+      } catch (error) {
+        console.error('🏓 Database keepalive ping FAILED:', error.message);
+      }
+    }, 4 * 60 * 1000); // 4 menit
+
   } catch (error) {
     console.error('❌ Gagal memulai server:', error);
     process.exit(1);

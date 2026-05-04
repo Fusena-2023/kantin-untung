@@ -137,14 +137,12 @@ router.post('/login', [
       });
     }
 
-    // Update last login
-    await user.update({ lastLogin: new Date() });
-
     const token = generateToken(user);
 
     // Remove password from response
     const userResponse = user.toJSON();
 
+    // ⚡ Kirim response DULU (lebih cepat untuk user)
     res.json({
       success: true,
       message: 'Login berhasil',
@@ -153,6 +151,12 @@ router.post('/login', [
         token
       }
     });
+
+    // ⚡ Fire-and-forget: update lastLogin tanpa menunggu
+    user.update({ lastLogin: new Date() }).catch(err => {
+      console.error('Failed to update lastLogin:', err.message);
+    });
+
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({

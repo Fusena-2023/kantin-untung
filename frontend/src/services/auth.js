@@ -6,16 +6,33 @@ class AuthService {
   }
 
   async login(credentials) {
-    try {
-      const response = await api.post(`${this.baseURL}/login`, credentials)
-      if (response.data.success) {
-        const { token, user } = response.data.data
-        this.setToken(token)
-        return { user, token }
+    const maxRetries = 2
+
+    let lastError
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await api.post(`${this.baseURL}/login`, credentials, {
+          timeout: attempt === 0 ? 15000 : 30000, // Longer timeout on retry
+        })
+
+        if (response.data.success) {
+          const { token, user } = response.data.data
+          this.setToken(token)
+          return { user, token }
+        }
+        throw new Error(response.data.message)
+      } catch (error) {
+        lastError = error
+
+        // Hanya retry untuk network/timeout errors, bukan auth errors
+        const isRetryable = !error.response || error.code === 'ECONNABORTED'
+        if (!isRetryable || attempt === maxRetries) {
+          throw error.response?.data?.message || 'Login gagal. Server sedang loading, coba lagi.'
+        }
+
+        // Wait sebelum retry (exponential backoff)
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
       }
-      throw new Error(response.data.message)
-    } catch (error) {
-      throw error.response?.data?.message || 'Login gagal'
     }
   }
 
